@@ -165,6 +165,13 @@
     <Image Include="..\..\..\Users\pedro.albano\Pictures\res.png" />
     <Image Include="bricks.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="planksAO.png" />
+    <Content Include="planksBC.png" />
+    <Content Include="planksHMap.png" />
+    <Content Include="planksNMap.png" />
+    <Content Include="planksRMap.png" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

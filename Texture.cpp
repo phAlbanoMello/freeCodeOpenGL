@@ -15,7 +15,8 @@ Texture::Texture(const char* image, GLenum texType, GLenum slot, GLenum format, 
 	//Generates the OpenGL texture object
 	glGenTextures(1, &ID);
 	//Assigning the texture to a texture unit
-	glActiveTexture(slot);
+	glActiveTexture(GL_TEXTURE0 + slot);
+	unit = slot;
 	glBindTexture(texType, ID);
 
 	//Configures the type of algorithm used to make the image smaller or bigger (solving borders)
@@ -31,14 +32,14 @@ Texture::Texture(const char* image, GLenum texType, GLenum slot, GLenum format, 
 	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, flatColor);*/
 
 	//Assigns the image to the OpenGL Texture Object
-	glTexImage2D(texType, 0, GL_RGB, widthImg, heightImg, 0, format, pixelType, bytes);
-	//Genarate Mipmaps
+	glTexImage2D(texType, 0, GL_RGBA, widthImg, heightImg, 0, format, pixelType, bytes);
+	//Generate Mipmaps
 	glGenerateMipmap(texType);
 
 	//Deletes the image data as it is already in the OpenGL Texture object
 	stbi_image_free(bytes);
 
-	//Unbinds the OpenGL Texture object so that it can't accidantally modified
+	//Unbinds the OpenGL Texture object so that it can't accidentally be modified
 	glBindTexture(texType,0);
 }
 
@@ -54,6 +55,7 @@ void Texture::texUnit(Shader& shader, const char* uniform, GLuint unit)
 
 void Texture::Bind()
 {
+	glActiveTexture(GL_TEXTURE0 + unit);
 	glBindTexture(type, ID);
 }
 
