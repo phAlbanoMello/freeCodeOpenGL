@@ -138,6 +138,7 @@ int main() {
 	//Tell GLFW we are using the CORE profile
 	//So that means we only have the modern functions
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
 	//Create a GLFWwindow object with given dimensions, the name and wether it should be fullscreen.
 	GLFWwindow* window = glfwCreateWindow(width, height, "FreeOpenGL", NULL, NULL);
@@ -196,7 +197,7 @@ int main() {
 	lightEBO.Unbind();
 
 	glm::vec4 lightColor = glm::vec4(1.f, 1.f, 1.f, .1f);
-	glm::vec3 lightPos = glm::vec3(0.f, .11f, .0f);
+	glm::vec3 lightPos = glm::vec3(0.f, .30f, .0f);
 	glm::mat4 lightModel = glm::mat4(1.f);
 	lightModel = glm::translate(lightModel, lightPos);
 
@@ -205,6 +206,7 @@ int main() {
 	pyramidModel = glm::translate(pyramidModel, pyramidPos);
 
 	lightShader.Activate();
+	glUniform1f(glGetUniformLocation(lightShader.ID, "sizeScale"), 0.05);
 	glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(lightModel));
 	glUniform4f(glGetUniformLocation(lightShader.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 	shaderProgram.Activate();
@@ -223,9 +225,10 @@ int main() {
 
 	Camera camera(width, height, glm::vec3(0.f, 1.f, 2.f));
 
+	const GLubyte* version = glGetString(GL_VERSION);
+
 	//Main while loop
 	while (!glfwWindowShouldClose(window)) {
-		
 		// Specify the color of the background
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
 		// Clean the back buffer and assign the new color to it

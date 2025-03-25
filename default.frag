@@ -21,6 +21,8 @@ uniform vec3 camPos;
 // Uniform for scaling the texture coordinates
 uniform float texScale;
 
+const float ambient = .15;
+
 vec4 scaledTextCoord(sampler2D tex){
 	return texture(tex, texCoord * texScale);
 }
@@ -28,23 +30,65 @@ vec4 scaledTextCoord(sampler2D tex){
 
 vec4 pointLight()
 {
-	float ambient = 0.15f;
-	vec3 normal = normalize(Normal);
-	vec3 lightDirection = normalize(lightPos - crntPos);
-	float diffuse = max(dot(normal, lightDirection), 0.f);
+	vec3 lightVec = lightPos - crntPos;
 	
-	float specularLight = 0.5f;
+	float dist = length(lightVec);
+	float a = .8f;
+	float b = 0.2f;
+	float intensity = 1.f / (a * dist * dist + b * dist + 1.f);
+
+	vec3 normal = normalize(Normal);
+	vec3 lightDirection = normalize(lightVec);
+	float diffuse = max(dot(normal, lightDirection), 0.f) * 0.9f; //Trying to soften diffuse
+	
+	float specularLight = 0.2f;
 	vec3 viewDirection = normalize(camPos - crntPos);
 	vec3 reflectionDirection = reflect(-lightDirection, normal);
-	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.f), 16);
+	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.f), 32);
+	float specular = specAmount * specularLight;
+
+	return scaledTextCoord(tex0) * (diffuse * intensity + ambient) + scaledTextCoord(tex1).r * specular * intensity * lightColor;
+}
+
+vec4 directLight(){
+
+	vec3 normal = normalize(Normal);
+	vec3 lightDirection = normalize(vec3(1.f, 1.f, 0.f));
+	float diffuse = max(dot(normal, lightDirection), 0.f) * 0.9f;
+	
+	float specularLight = 0.2f;
+	vec3 viewDirection = normalize(camPos - crntPos);
+	vec3 reflectionDirection = reflect(-lightDirection, normal);
+	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.f), 32);
 	float specular = specAmount * specularLight;
 
 	return scaledTextCoord(tex0) * (diffuse + ambient) + scaledTextCoord(tex1).r * specular * lightColor;
 }
 
+vec4 spotLight(){
+	float outerCone = 0.9f; //Angle where light starts fading out (cosine value, ~25 degrees) *angle values instead of degrees saves computational effort
+	float innerCone = 0.95f; //Angle where light is full brightness (cosine value, ~18 degrees)
+
+	vec3 normal = normalize(Normal);
+	vec3 lightDirection = normalize(lightPos - crntPos);
+	float diffuse = max(dot(normal, lightDirection), 0.f) * 0.9f;
+	
+	float specularLight = 0.2f;
+	vec3 viewDirection = normalize(camPos - crntPos);
+	vec3 reflectionDirection = reflect(-lightDirection, normal);
+	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.f), 32);
+	float specular = specAmount * specularLight;
+
+	float angle = dot(vec3(0.0f, -1.f,-0.f), -lightDirection); //Dot product between light direction and spotlight's central axis (downwards here)
+	float intensity = clamp((angle - outerCone) / (innerCone - outerCone), 0.0f, 1.0f); //Fades light between inner/outer cones using smooth interpolation
+
+	return scaledTextCoord(tex0) * (diffuse * intensity + ambient) //Diffuse/ambient scaled by spotlight intensity
+		+ scaledTextCoord(tex1).r * specular * intensity * lightColor; //Specular highlights also attenuated by intensity
+}
+
 void main()
 {
-  FragColor = pointLight();
+  FragColor = directLight() + spotLight() ;
 }
 
 /* Notes on Diffuse lighting!

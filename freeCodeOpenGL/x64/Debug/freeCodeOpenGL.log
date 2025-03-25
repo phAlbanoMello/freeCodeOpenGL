@@ -1,2 +1,4 @@
 ﻿  Main.cpp
+C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Tools\MSVC\14.42.34433\include\filesystem(12): warning STL4038: The contents of <filesystem> are available only with C++17 or later.
+C:\Projetos\Study\freeCodeOpenGL\Main.cpp(209,65): warning C4305: 'argument': truncation from 'double' to 'GLfloat'
   freeCodeOpenGL.vcxproj -> C:\Projetos\Study\freeCodeOpenGL\x64\Debug\freeCodeOpenGL.exe
