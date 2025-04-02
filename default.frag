@@ -1,17 +1,18 @@
 ﻿#version 330 core
 out vec4 FragColor;
 
+//Imports the current position from vertex shader
+in vec3 crntPos;
+//Imports the normal from the Vertex Shader
+in vec3 Normal;
+//Imports the color from the Vertex Shader
 in vec3 color;
 //Imports the texture coordinates from the Vertex Shader
 in vec2 texCoord;
-//Imports the normal from the Vertex Shader
-in vec3 Normal;
-//Imports the current position from vertex shader
-in vec3 crntPos;
 
 //Get the texture unit from Main.cpp
-uniform sampler2D tex0;
-uniform sampler2D tex1;
+uniform sampler2D diffuse0;
+uniform sampler2D specular0;
 //Gets the color of the light from main
 uniform vec4 lightColor;
 //Gets the position of the light from main
@@ -47,7 +48,7 @@ vec4 pointLight()
 	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.f), 32);
 	float specular = specAmount * specularLight;
 
-	return scaledTextCoord(tex0) * (diffuse * intensity + ambient) + scaledTextCoord(tex1).r * specular * intensity * lightColor;
+	return scaledTextCoord(diffuse0) * (diffuse * intensity + ambient) + scaledTextCoord(specular0).r * specular * intensity * lightColor;
 }
 
 vec4 directLight(){
@@ -62,11 +63,11 @@ vec4 directLight(){
 	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.f), 32);
 	float specular = specAmount * specularLight;
 
-	return scaledTextCoord(tex0) * (diffuse + ambient) + scaledTextCoord(tex1).r * specular * lightColor;
+	return scaledTextCoord(diffuse0) * (diffuse + ambient) + scaledTextCoord(specular0).r * specular * lightColor;
 }
 
 vec4 spotLight(){
-	float outerCone = 0.9f; //Angle where light starts fading out (cosine value, ~25 degrees) *angle values instead of degrees saves computational effort
+	float outerCone = 0.8f; //Angle where light starts fading out (cosine value, ~25 degrees) *angle values instead of degrees saves computational effort
 	float innerCone = 0.95f; //Angle where light is full brightness (cosine value, ~18 degrees)
 
 	vec3 normal = normalize(Normal);
@@ -82,8 +83,8 @@ vec4 spotLight(){
 	float angle = dot(vec3(0.0f, -1.f,-0.f), -lightDirection); //Dot product between light direction and spotlight's central axis (downwards here)
 	float intensity = clamp((angle - outerCone) / (innerCone - outerCone), 0.0f, 1.0f); //Fades light between inner/outer cones using smooth interpolation
 
-	return scaledTextCoord(tex0) * (diffuse * intensity + ambient) //Diffuse/ambient scaled by spotlight intensity
-		+ scaledTextCoord(tex1).r * specular * intensity * lightColor; //Specular highlights also attenuated by intensity
+	return scaledTextCoord(diffuse0) * (diffuse * intensity + ambient) //Diffuse/ambient scaled by spotlight intensity
+		+ scaledTextCoord(specular0).r * specular * intensity * lightColor; //Specular highlights also attenuated by intensity
 }
 
 void main()
