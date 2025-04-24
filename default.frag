@@ -19,23 +19,16 @@ uniform vec4 lightColor;
 uniform vec3 lightPos;
 //Gets the position of the Camera from main
 uniform vec3 camPos;
-// Uniform for scaling the texture coordinates
-uniform float texScale;
 
-const float ambient = .15;
-
-vec4 scaledTextCoord(sampler2D tex){
-	return texture(tex, texCoord * texScale);
-}
-
+const float ambient = 0.2;
 
 vec4 pointLight()
 {
 	vec3 lightVec = lightPos - crntPos;
 	
 	float dist = length(lightVec);
-	float a = .8f;
-	float b = 0.2f;
+	float a = 3.f;
+	float b = 0.7f;
 	float intensity = 1.f / (a * dist * dist + b * dist + 1.f);
 
 	vec3 normal = normalize(Normal);
@@ -48,7 +41,7 @@ vec4 pointLight()
 	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.f), 32);
 	float specular = specAmount * specularLight;
 
-	return scaledTextCoord(diffuse0) * (diffuse * intensity + ambient) + scaledTextCoord(specular0).r * specular * intensity * lightColor;
+	return (texture(diffuse0, texCoord) * (diffuse * intensity + ambient) + texture(specular0, texCoord).r * specular * intensity) * lightColor;
 }
 
 vec4 directLight(){
@@ -63,7 +56,7 @@ vec4 directLight(){
 	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.f), 32);
 	float specular = specAmount * specularLight;
 
-	return scaledTextCoord(diffuse0) * (diffuse + ambient) + scaledTextCoord(specular0).r * specular * lightColor;
+	return (texture(diffuse0, texCoord) * (diffuse + ambient) + texture(specular0, texCoord).r * specular) * lightColor;
 }
 
 vec4 spotLight(){
@@ -83,13 +76,12 @@ vec4 spotLight(){
 	float angle = dot(vec3(0.0f, -1.f,-0.f), -lightDirection); //Dot product between light direction and spotlight's central axis (downwards here)
 	float intensity = clamp((angle - outerCone) / (innerCone - outerCone), 0.0f, 1.0f); //Fades light between inner/outer cones using smooth interpolation
 
-	return scaledTextCoord(diffuse0) * (diffuse * intensity + ambient) //Diffuse/ambient scaled by spotlight intensity
-		+ scaledTextCoord(specular0).r * specular * intensity * lightColor; //Specular highlights also attenuated by intensity
+	return (texture(diffuse0, texCoord) * (diffuse * intensity + ambient) + texture(specular0, texCoord).r * specular * intensity) * lightColor;
 }
 
 void main()
 {
-  FragColor = directLight() + spotLight() ;
+   FragColor = directLight();
 }
 
 /* Notes on Diffuse lighting!

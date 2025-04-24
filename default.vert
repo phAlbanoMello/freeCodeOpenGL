@@ -16,17 +16,21 @@ out vec2 texCoord;
 // Uniform matrices: camera (view + projection) and model (object transformation)
 uniform mat4 camMatrix;
 uniform mat4 model;
+uniform mat4 translation;
+uniform mat4 rotation;
+uniform mat4 scale;
+
 
 void main()
 {
    //calculates current vertex position to world space (model matrix)
-   crntPos = vec3(model * vec4(aPos, 1.f));
+   crntPos = vec3(model * translation * -rotation * scale * vec4(aPos, 1.f));
 
    // Pass the normal to the fragment shader (in object space)
    Normal = aNormal;
    // Pass color and texture coordinates to the fragment shader
    color = aColor;
-   texCoord = aTex;
+   texCoord = mat2(0.0, -1.0, 1.0, 0.0) * aTex;
 
    // Transform vertex position to clip space and set gl_Position
    gl_Position = camMatrix * vec4(crntPos, 1.0);
