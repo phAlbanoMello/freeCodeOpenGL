@@ -5,6 +5,8 @@
     <NintendoTargetName>Default</NintendoTargetName>
     <NXTargetSerialNumber>$(NintendoTargetSerialNumber)</NXTargetSerialNumber>
     <NXTargetName>$(NintendoTargetName)</NXTargetName>
+    <LocalDebuggerEnvironment>$(SolutionDir)\Libraries\lib\</LocalDebuggerEnvironment>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <NintendoTargetName>Default</NintendoTargetName>

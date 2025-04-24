@@ -20,7 +20,7 @@ uniform vec3 lightPos;
 //Gets the position of the Camera from main
 uniform vec3 camPos;
 
-const float ambient = 0.2;
+const float ambient = 0.5;
 
 vec4 pointLight()
 {
@@ -81,7 +81,7 @@ vec4 spotLight(){
 
 void main()
 {
-   FragColor = directLight();
+   FragColor = directLight();//texture(diffuse0, vec2(texCoord.x, 1.0 - texCoord.y));
 }
 
 /* Notes on Diffuse lighting!

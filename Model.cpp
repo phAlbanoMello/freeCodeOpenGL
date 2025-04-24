@@ -1,7 +1,8 @@
 #include "Model.h"
 
-Model::Model(const char* file)
+Model::Model(const char* file, bool flipUV_Y)
 {
+	this->flipUV_Y = flipUV_Y;
 	//Abstract glTF file in a JSON structure
 	std::string text = get_file_contents(file);
 	JSON = json::parse(text);
@@ -28,12 +29,12 @@ void Model::loadMesh(unsigned int indMesh)
 	unsigned int indAccInd = JSON["meshes"][indMesh]["primitives"][0]["indices"];
 
 	std::vector<float> posVec = getFloats(JSON["accessors"][posAccInd]);
-	std::vector<glm::vec3> positions = groupFloatsVec3(posVec);
+	std::vector<glm::vec3> positions = groupFloatsVecN<glm::vec3, 3>(posVec);
 	std::vector<float> normalVec = getFloats(JSON["accessors"][normalAccInd]);
 
-	std::vector<glm::vec3> normals = groupFloatsVec3(normalVec);
+	std::vector<glm::vec3> normals = groupFloatsVecN<glm::vec3, 3>(normalVec);
 	std::vector<float> texVec = getFloats(JSON["accessors"][texAccInd]);
-	std::vector<glm::vec2> texUVs = groupFloatsVec2(texVec);
+	std::vector<glm::vec2> texUVs = groupFloatsVecN<glm::vec2, 2>(texVec);
 
 	std::vector<Vertex> vertices = assembleVertices(positions, normals, texUVs);
 	std::vector<GLuint> indices = getIndices(JSON["accessors"][indAccInd]);
@@ -68,7 +69,7 @@ void Model::traverseNode(unsigned int nextNode, glm::mat4 matrix)
 		rotation = glm::make_quat(rotValues);
 	}
 	
-	glm::vec3 scale = glm::vec3(1., 1., 1.);
+	glm::vec3 scale = glm::vec3(1.f, 1.f, 1.f);
 	if (node.find("scale") != node.end())
 	{
 		float scaleValues[3]; 
@@ -262,50 +263,78 @@ std::vector<Vertex> Model::assembleVertices(std::vector<glm::vec3> positions, st
 	return vertices;
 }
 
-std::vector<glm::vec2> Model::groupFloatsVec2(std::vector<float> floatVec)
+//std::vector<glm::vec2> Model::groupFloatsVec2(std::vector<float> floatVec)
+//{
+//	const unsigned int floatsPerVector = 2;
+//
+//	std::vector<glm::vec2> vectors;
+//	for (unsigned int i = 0; i < floatVec.size(); i += floatsPerVector)
+//	{
+//		vectors.push_back(glm::vec2(0, 0));
+//		for (unsigned int j = 0; j < floatsPerVector; j++)
+//		{
+//			vectors.back()[j] = floatVec[i + j];
+//		}
+//	}
+//	return vectors;
+//}
+//
+//std::vector<glm::vec3> Model::groupFloatsVec3(std::vector<float> floatVec)
+//{
+//	const unsigned int floatsPerVector = 3;
+//
+//	std::vector<glm::vec3> vectors;
+//	for (unsigned int i = 0; i < floatVec.size(); i += floatsPerVector)
+//	{
+//		vectors.push_back(glm::vec3(0, 0, 0));
+//		for (unsigned int j = 0; j < floatsPerVector; j++)
+//		{
+//			vectors.back()[j] = floatVec[i + j];
+//		}
+//	}
+//	return vectors;
+//}
+//
+//std::vector<glm::vec4> Model::groupFloatsVec4(std::vector<float> floatVec)
+//{
+//	const unsigned int floatsPerVector = 4;
+//
+//	std::vector<glm::vec4> vectors;
+//	for (unsigned int i = 0; i < floatVec.size(); i += floatsPerVector)
+//	{
+//		vectors.push_back(glm::vec4(0, 0, 0, 0));
+//		for (unsigned int j = 0; j < floatsPerVector; j++)
+//		{
+//			vectors.back()[j] = floatVec[i + j];
+//		}
+//	}
+//	return vectors;
+//}
+
+template<typename VecType, int N>
+std::vector<VecType> Model::groupFloatsVecN(const std::vector<float>& floatVec)
 {
-	const unsigned int floatsPerVector = 2;
+	std::vector<VecType> vectors;
+	vectors.reserve(floatVec.size() / N);
 
-	std::vector<glm::vec2> vectors;
-	for (unsigned int i = 0; i < floatVec.size(); i += floatsPerVector)
+	for (size_t i = 0; i < floatVec.size(); i += N)
 	{
-		vectors.push_back(glm::vec2(0, 0));
-		for (unsigned int j = 0; j < floatsPerVector; j++)
+		VecType v;
+		for (int j = 0; j < N; ++j)
 		{
-			vectors.back()[j] = floatVec[i + j];
+			v[j] = floatVec[i + j];
 		}
-	}
-	return vectors;
-}
 
-std::vector<glm::vec3> Model::groupFloatsVec3(std::vector<float> floatVec)
-{
-	const unsigned int floatsPerVector = 3;
-
-	std::vector<glm::vec3> vectors;
-	for (unsigned int i = 0; i < floatVec.size(); i += floatsPerVector)
-	{
-		vectors.push_back(glm::vec3(0, 0, 0));
-		for (unsigned int j = 0; j < floatsPerVector; j++)
+		if(N == 2)
 		{
-			vectors.back()[j] = floatVec[i + j];
+			if (flipUV_Y)
+			{
+				v[1] = 1.f - v[1];
+			}
 		}
-	}
-	return vectors;
-}
 
-std::vector<glm::vec4> Model::groupFloatsVec4(std::vector<float> floatVec)
-{
-	const unsigned int floatsPerVector = 4;
-
-	std::vector<glm::vec4> vectors;
-	for (unsigned int i = 0; i < floatVec.size(); i += floatsPerVector)
-	{
-		vectors.push_back(glm::vec4(0, 0, 0, 0));
-		for (unsigned int j = 0; j < floatsPerVector; j++)
-		{
-			vectors.back()[j] = floatVec[i + j];
-		}
+		vectors.push_back(v);
 	}
+
 	return vectors;
 }

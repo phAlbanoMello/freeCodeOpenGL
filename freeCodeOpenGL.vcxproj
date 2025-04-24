@@ -119,11 +119,12 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>C:\Projetos\Study\freeCodeOpenGL\Libraries\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>glfw3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>assimp-vc142-mt.lib;glfw3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -161,8 +162,16 @@
     <None Include="default.vert" />
     <None Include="light.frag" />
     <None Include="light.vert" />
+    <None Include="Models\bunny\scene.bin" />
+    <None Include="Models\bunny\scene.gltf" />
+    <None Include="Models\grindstone\scene.bin" />
+    <None Include="Models\grindstone\scene.gltf" />
     <None Include="Models\Map\scene.bin" />
     <None Include="Models\Map\scene.gltf" />
+    <None Include="Models\scroll\scene.bin" />
+    <None Include="Models\scroll\scene.gltf" />
+    <None Include="Models\sword\scene.bin" />
+    <None Include="Models\sword\scene.gltf" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
@@ -177,7 +186,14 @@
   <ItemGroup>
     <Image Include="..\..\..\Users\pedro.albano\Pictures\res.png" />
     <Image Include="bricks.png" />
+    <Image Include="Models\bunny\baseColor.png" />
+    <Image Include="Models\bunny\metallicRoughness.png" />
+    <Image Include="Models\grindstone\textures\Main_baseColor.jpeg" />
+    <Image Include="Models\grindstone\textures\Main_metallicRoughness.png" />
+    <Image Include="Models\grindstone\textures\Main_normal.png" />
     <Image Include="Models\Map\baseColor.png" />
+    <Image Include="Models\scroll\textures\lambert4SG_baseColor.png" />
+    <Image Include="Models\sword\textures\Object001_mtl_baseColor.jpeg" />
     <Image Include="planksAO.png" />
     <Image Include="planksBC.png" />
   </ItemGroup>

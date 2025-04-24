@@ -77,6 +77,30 @@
     <None Include="Models\Map\scene.bin">
       <Filter>Resource Files\Models</Filter>
     </None>
+    <None Include="Models\bunny\scene.gltf">
+      <Filter>Resource Files\Models</Filter>
+    </None>
+    <None Include="Models\bunny\scene.bin">
+      <Filter>Resource Files\Models</Filter>
+    </None>
+    <None Include="Models\grindstone\scene.bin">
+      <Filter>Resource Files\Models</Filter>
+    </None>
+    <None Include="Models\grindstone\scene.gltf">
+      <Filter>Resource Files\Models</Filter>
+    </None>
+    <None Include="Models\scroll\scene.bin">
+      <Filter>Resource Files\Models</Filter>
+    </None>
+    <None Include="Models\scroll\scene.gltf">
+      <Filter>Resource Files\Models</Filter>
+    </None>
+    <None Include="Models\sword\scene.bin">
+      <Filter>Resource Files\Models</Filter>
+    </None>
+    <None Include="Models\sword\scene.gltf">
+      <Filter>Resource Files\Models</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h">
@@ -118,6 +142,27 @@
       <Filter>Resource Files\Textures</Filter>
     </Image>
     <Image Include="Models\Map\baseColor.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="Models\bunny\metallicRoughness.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="Models\bunny\baseColor.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="Models\grindstone\textures\Main_baseColor.jpeg">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="Models\grindstone\textures\Main_metallicRoughness.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="Models\grindstone\textures\Main_normal.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="Models\scroll\textures\lambert4SG_baseColor.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="Models\sword\textures\Object001_mtl_baseColor.jpeg">
       <Filter>Resource Files\Textures</Filter>
     </Image>
   </ItemGroup>

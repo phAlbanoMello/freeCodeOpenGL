@@ -56,8 +56,11 @@ int main() {
 	Camera camera(width, height, glm::vec3(0.f, 0.f, 2.f));
 
 	//Load Model------------------------------------------------------------------
-	std::string modelPath = "Models/Map/scene.gltf";
-	Model model(modelPath.c_str());
+	std::string mapModelPath = "Models/Map/scene.gltf";
+	Model mapModel(mapModelPath.c_str(), true);
+
+	std::string swordModelPath = "Models/sword/scene.gltf";
+	Model swordModel(swordModelPath.c_str(), true);
 	//
 
 	//Main while loop
@@ -72,8 +75,9 @@ int main() {
 
 		camera.updateMatrix(45.f, 0.1f, 100.f);
 
-		model.Draw(shaderProgram, camera);
-		
+		mapModel.Draw(shaderProgram, camera);
+		swordModel.Draw(shaderProgram, camera);
+
 		// Swap the back buffer with the front buffer
 		glfwSwapBuffers(window);
 		//Take care of all GLFW events
