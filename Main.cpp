@@ -52,21 +52,22 @@ int main() {
 	
 	//Enables depth buffer
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
 
 	Camera camera(width, height, glm::vec3(0.f, 0.f, 2.f));
 
 	//Load Model------------------------------------------------------------------
-	std::string mapModelPath = "Models/Map/scene.gltf";
-	Model mapModel(mapModelPath.c_str(), true);
+	std::string groundModelPath = "Models/ground/scene.gltf";
+	Model groundModel(groundModelPath.c_str(), true);
 
-	std::string swordModelPath = "Models/sword/scene.gltf";
-	Model swordModel(swordModelPath.c_str(), true);
+	std::string treesModelPath = "Models/trees/scene.gltf";
+	Model treesModel(treesModelPath.c_str(), true);
 	//
 
 	//Main while loop
 	while (!glfwWindowShouldClose(window)) {
 		// Specify the color of the background
-		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
+		glClearColor(0.85f, 0.85f, 0.90f, 1.0f);
 		// Clean the back buffer and assign the new color to it
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		// Tell OpenGL which Shader Program we want to use
@@ -75,8 +76,8 @@ int main() {
 
 		camera.updateMatrix(45.f, 0.1f, 100.f);
 
-		mapModel.Draw(shaderProgram, camera);
-		swordModel.Draw(shaderProgram, camera);
+		groundModel.Draw(shaderProgram, camera);
+		treesModel.Draw(shaderProgram, camera);
 
 		// Swap the back buffer with the front buffer
 		glfwSwapBuffers(window);

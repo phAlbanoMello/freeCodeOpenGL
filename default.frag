@@ -79,15 +79,30 @@ vec4 spotLight(){
 	return (texture(diffuse0, texCoord) * (diffuse * intensity + ambient) + texture(specular0, texCoord).r * specular * intensity) * lightColor;
 }
 
+float near = 0.1f;
+float far = 100.f;
+
+float linearizeDepth(float depth)
+{
+	return (2.0 * near * far) / (far + near - (depth * 2.0 - 1.0) * (far - near));
+}
+
+float logisticDepth(float depth, float steepness, float offset)
+{
+	float zVal = linearizeDepth(depth);
+	return (1/(1+exp(-steepness * (zVal - offset))));
+}
+
 void main()
 {
-   FragColor = directLight();//texture(diffuse0, vec2(texCoord.x, 1.0 - texCoord.y));
+	float depth = logisticDepth(gl_FragCoord.z, 0.2f, 5.0f);
+	FragColor = directLight() * (1.0f - depth) + vec4(depth * vec3(0.85f, 0.85f, 0.90f), 1.0f);
 }
 
 /* Notes on Diffuse lighting!
 	This Diffuse lighting is based on the -Lambertian reflectance model-, 
 	which states that the brightness of a surface depends on the angle between 
-	the light source and the surface normal. 
+	the light source and the surface normal.
 	The closer the angle is to 0� (i.e., the more directly the light hits the surface), 
 	the brighter the surface appears.
 
