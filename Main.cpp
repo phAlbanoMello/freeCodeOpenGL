@@ -37,7 +37,7 @@ int main() {
 
 	//Create shader program object and get its reference
 	Shader shaderProgram("default.vert", "default.frag");
-
+	Shader outliningProgram("outlining.vert", "outlining.frag");
 	//----------------------------------------------------------- Setting up Shaders -------------------------------------------------------
 	glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 	glm::vec3 lightPos = glm::vec3(0.5f, 0.5f, 0.5f);
@@ -52,32 +52,49 @@ int main() {
 	
 	//Enables depth buffer
 	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
+	
+	//Enables stencil buffer
+	glEnable(GL_STENCIL_TEST);
+	//Set rules for outcomes of stencil tests
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 	Camera camera(width, height, glm::vec3(0.f, 0.f, 2.f));
 
 	//Load Model------------------------------------------------------------------
-	std::string groundModelPath = "Models/ground/scene.gltf";
-	Model groundModel(groundModelPath.c_str(), true);
-
-	std::string treesModelPath = "Models/trees/scene.gltf";
-	Model treesModel(treesModelPath.c_str(), true);
+	std::string modelPath = "Models/crow/scene.gltf";
+	std::string outlinePath = "Models/crow-outline/scene.gltf";
+	
+	Model model(modelPath.c_str(), true);
+	Model Outline(outlinePath.c_str(), true);
 	//
 
 	//Main while loop
 	while (!glfwWindowShouldClose(window)) {
 		// Specify the color of the background
-		glClearColor(0.85f, 0.85f, 0.90f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		// Clean the back buffer and assign the new color to it
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		// Tell OpenGL which Shader Program we want to use
 
 		camera.Inputs(window);
-
+		//Updates and Exports the camera Matrix to the Vertex Shader
 		camera.updateMatrix(45.f, 0.1f, 100.f);
 
-		groundModel.Draw(shaderProgram, camera);
-		treesModel.Draw(shaderProgram, camera);
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glStencilMask(0xFF);
+
+		model.Draw(shaderProgram, camera);
+
+		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+		glStencilMask(0x00);
+		glDisable(GL_DEPTH_TEST);
+
+		outliningProgram.Activate();
+		Outline.Draw(outliningProgram, camera);
+
+		glStencilMask(0xFF);
+		glStencilFunc(GL_ALWAYS, 0, 0xFF);
+		glEnable(GL_DEPTH_TEST);
 
 		// Swap the back buffer with the front buffer
 		glfwSwapBuffers(window);
@@ -86,6 +103,7 @@ int main() {
 	}
 	// Delete all the objects we've created
 	shaderProgram.Delete(); 
+	outliningProgram.Delete();
 	//Delete GLFWwindow object after closing it
 	glfwDestroyWindow(window);
 	//Terminates GLFW before ending the program
