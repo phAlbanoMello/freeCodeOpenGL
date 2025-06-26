@@ -52,32 +52,60 @@ int main() {
 	
 	//Enables depth buffer
 	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
+	
+	// Enables Cull Facing
+	glEnable(GL_CULL_FACE);
+	// Keeps front faces
+	glCullFace(GL_FRONT);
+	// Uses clock-wise standard
+	glFrontFace(GL_CW);
 
 	Camera camera(width, height, glm::vec3(0.f, 0.f, 2.f));
 
 	//Load Model------------------------------------------------------------------
-	std::string groundModelPath = "Models/ground/scene.gltf";
-	Model groundModel(groundModelPath.c_str(), true);
-
-	std::string treesModelPath = "Models/trees/scene.gltf";
-	Model treesModel(treesModelPath.c_str(), true);
-	//
+	std::string statueModelPath = "Models/statue/scene.gltf";
+	Model statueModel(statueModelPath.c_str(), true);
+	//----------------------------------------------------------------------------
+	
+	// Variables to create periodic event for FPS displaying
+	double prevTime = 0.0f;
+	double currTime = 0.0f;
+	double timeDiff;
+	// Keeps track of the amount of frames in timeDiff
+	unsigned int counter = 0;
 
 	//Main while loop
 	while (!glfwWindowShouldClose(window)) {
+
+		currTime = glfwGetTime();
+		timeDiff = currTime - prevTime;
+		counter++;
+
+		if (timeDiff >= 1.0 / 30.0)
+		{
+			// Creates new title
+			std::string FPS = std::to_string((1.0 / timeDiff) * counter);
+			std::string TimeBetweenFramesInMS = std::to_string((timeDiff / counter) * 1000);
+			std::string newTitle = "OpenGLStudy - Face Culling and FPS - " + FPS + "FPS / " + TimeBetweenFramesInMS + "ms";
+			glfwSetWindowTitle(window, newTitle.c_str());
+
+			// Resets times and counter
+			prevTime = currTime;
+			counter = 0;
+
+			//Moved here so that inputs are processed in sync with time so that inputs response do not vary with FPS with VSync disabled.
+			camera.Inputs(window); 
+		}
+
 		// Specify the color of the background
-		glClearColor(0.85f, 0.85f, 0.90f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
 		// Clean the back buffer and assign the new color to it
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		// Tell OpenGL which Shader Program we want to use
-
-		camera.Inputs(window);
 
 		camera.updateMatrix(45.f, 0.1f, 100.f);
 
-		groundModel.Draw(shaderProgram, camera);
-		treesModel.Draw(shaderProgram, camera);
+		statueModel.Draw(shaderProgram, camera);
 
 		// Swap the back buffer with the front buffer
 		glfwSwapBuffers(window);
