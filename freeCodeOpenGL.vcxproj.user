@@ -3,10 +3,10 @@
   <PropertyGroup />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <NintendoTargetName>Default</NintendoTargetName>
-    <NXTargetSerialNumber>$(NintendoTargetSerialNumber)</NXTargetSerialNumber>
-    <NXTargetName>$(NintendoTargetName)</NXTargetName>
     <LocalDebuggerEnvironment>$(SolutionDir)\Libraries\lib\</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <NXTargetSerialNumber>$(NintendoTargetSerialNumber)</NXTargetSerialNumber>
+    <NXTargetName>$(NintendoTargetName)</NXTargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <NintendoTargetName>Default</NintendoTargetName>
