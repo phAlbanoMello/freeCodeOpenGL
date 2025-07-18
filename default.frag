@@ -48,7 +48,7 @@ vec4 pointLight()
     // Final color composition
     vec4 diff = texture(diffuse0, texCoord);
     float specVal = texture(specular0, texCoord).r;
-    return (diff * (diffuse * intensity + ambient) + specVal * spec * intensity) * lightColor;
+    return (diff * (diffuse * intensity + ambient) + specVal * specular * intensity) * lightColor;
 }
 
 vec4 directLight(){
@@ -65,7 +65,7 @@ vec4 directLight(){
 
     vec4 diff = texture(diffuse0, texCoord);
     float specVal = texture(specular0, texCoord).r;
-    return (diff * (diffuse + ambient) + specVal * spec) * lightColor;
+    return (diff * (diffuse + ambient) + specVal * specular) * lightColor;
 }
 
 vec4 spotLight()
@@ -84,12 +84,12 @@ vec4 spotLight()
 	float specular = specAmount * specularLight;
 
     // Spotlight intensity based on angle
-    float angle = dot(vec3(0.0, -1.0, 0.0), -lightDir);
+    float angle = dot(vec3(0.0, -1.0, 0.0), -lightDirection);
     float intensity = clamp((angle - outerCone) / (innerCone - outerCone), 0.0, 1.0);
 
     vec4 diff = texture(diffuse0, texCoord);
     float specVal = texture(specular0, texCoord).r;
-    return (diff * (diffuse * intensity + ambient) + specVal * spec * intensity) * lightColor;
+    return (diff * (diffuse * intensity + ambient) + specVal * specular * intensity) * lightColor;
 }
 
 //Depth functions

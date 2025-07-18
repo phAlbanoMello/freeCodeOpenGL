@@ -4,146 +4,121 @@ const unsigned int width = 1024;
 const unsigned int height = 1024;
 
 bool debugFPS = false;
-// Variables to create periodic event for FPS displaying
+
+// Variables for periodic FPS display
 double prevTime = 0.0f;
 double currTime = 0.0f;
 double timeDiff;
-// Keeps track of the amount of frames in timeDiff
 unsigned int counter = 0;
 
 int main() {
-	//Initialize GLFW
+	// Initialize GLFW
 	glfwInit();
 
-	//Tell GLFW what version of OpenGL we are using
-	//In this case 3.3 (thats why Major and Minor are 3)
+	// Set OpenGL version to 3.3 Core Profile
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	//Tell GLFW we are using the CORE profile
-	//So that means we only have the modern functions
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	//Create a GLFWwindow object with given dimensions, the name and wether it should be fullscreen.
+	// Create window
 	GLFWwindow* window = glfwCreateWindow(width, height, "OpenGL study Main", NULL, NULL);
-
-	//Error check if windows failed to be created
-	if (window == NULL)
-	{
-		std::cout << "Failed to create GLFW window" << std::endl;
+	if (window == NULL) {
+		std::cerr << "Failed to create GLFW window" << std::endl;
 		glfwTerminate();
-		return  -1;
+		return -1;
 	}
-	//Introduce window to the current context
 	glfwMakeContextCurrent(window);
 
-	//Load GLAD so it configures OpenGL
-	gladLoadGL();
+	// Load OpenGL functions using GLAD
+	if (!gladLoadGL()) {
+		std::cerr << "Failed to initialize GLAD" << std::endl;
+		return -1;
+	}
 
-	//Specify the viewport of OpenGL in the window
-	//In this case going from x and y = 0 to x and y = 800 (top left for bottom right)
-	glViewport(0,0,width,height);
+	// Set viewport from bottom-left (0,0) to top-right (width, height)
+	glViewport(0, 0, width, height);
 
-	//Create shader program object and get its reference
+	// Load shaders
 	Shader shaderProgram("default.vert", "default.frag");
 	Shader outliningProgram("outlining.vert", "outlining.frag");
-	//----------------------------------------------------------- Setting up Shaders -------------------------------------------------------
-	glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-	glm::vec3 lightPos = glm::vec3(0.5f, 0.5f, 0.5f);
-	glm::mat4 lightModel = glm::mat4(1.0f);
-	lightModel = glm::translate(lightModel, lightPos);
-	
+
+	// Set up lighting
+	glm::vec4 lightColor = glm::vec4(1.0f);
+	glm::vec3 lightPos = glm::vec3(0.5f);
+	glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), lightPos);
+
 	shaderProgram.Activate();
-	
 	glUniform4f(glGetUniformLocation(shaderProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 	glUniform3f(glGetUniformLocation(shaderProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
-	//----------------------------------------------------------------------------------------------------------------------------------------
-	
-	//Enables depth buffer
+
+	// Enable depth testing, face culling, and stencil buffer
 	glEnable(GL_DEPTH_TEST);
-	// Enables Cull Facing
 	glEnable(GL_CULL_FACE);
-	// Keeps front faces
-	glCullFace(GL_FRONT);
-	// Uses clock-wise standard
-	glFrontFace(GL_CW);
-	//Enables stencil buffer
+	glCullFace(GL_BACK);
+	glFrontFace(GL_CCW);
 	glEnable(GL_STENCIL_TEST);
-	//Set rules for outcomes of stencil tests
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
+	// Initialize camera
 	Camera camera(width, height, glm::vec3(0.f, 0.f, 2.f));
 
-	//Load Model------------------------------------------------------------------
+	// Load models
 	std::string modelPath = "Models/crow/scene.gltf";
 	std::string outlinePath = "Models/crow-outline/scene.gltf";
-	
 	Model model(modelPath.c_str(), true);
 	Model Outline(outlinePath.c_str(), true);
-	//
 
-	//Main while loop
+	// Main render loop
 	while (!glfwWindowShouldClose(window)) {
-
 		currTime = glfwGetTime();
 		timeDiff = currTime - prevTime;
 		counter++;
 
-		if (timeDiff >= 1.0 / 30.0)
-		{
-			if (debugFPS)
-			{
-				// Creates new title
+		if (timeDiff >= 1.0 / 30.0) {
+			if (debugFPS) {
 				std::string FPS = std::to_string((1.0 / timeDiff) * counter);
 				std::string TimeBetweenFramesInMS = std::to_string((timeDiff / counter) * 1000);
 				std::string newTitle = "OpenGLStudy - Face Culling and FPS - " + FPS + "FPS / " + TimeBetweenFramesInMS + "ms";
 				glfwSetWindowTitle(window, newTitle.c_str());
 			}
-			
-			// Resets times and counter
 			prevTime = currTime;
 			counter = 0;
-
-			//Moved here so that inputs are processed in sync with time so that inputs response do not vary with FPS with VSync disabled.
-			camera.Inputs(window); 
+			camera.Inputs(window);
 		}
 
-		// Specify the color of the background
+		// Clear buffers
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-
-		// Clean the back buffer and assign the new color to it
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		// Tell OpenGL which Shader Program we want to use
 
-		camera.Inputs(window);
-		//Updates and Exports the camera Matrix to the Vertex Shader
+		// Update camera matrix
 		camera.updateMatrix(45.f, 0.1f, 100.f);
 
+		// Draw main model and mark stencil
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
 		glStencilMask(0xFF);
-
 		model.Draw(shaderProgram, camera);
 
+		// Draw outline where stencil is not equal to 1
 		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
 		glStencilMask(0x00);
-		glDisable(GL_DEPTH_TEST);
-
 		outliningProgram.Activate();
+		glCullFace(GL_FRONT); // Invert culling for outline
 		Outline.Draw(outliningProgram, camera);
+		glCullFace(GL_BACK);  // Restore culling
 
-		model.Draw(shaderProgram, camera);
+		// Restore stencil state
+		glStencilMask(0xFF);
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
 
-		// Swap the back buffer with the front buffer
+		// Swap buffers and poll events
 		glfwSwapBuffers(window);
-		//Take care of all GLFW events
 		glfwPollEvents();
 	}
-	// Delete all the objects we've created
-	shaderProgram.Delete(); 
+
+	// Cleanup
+	shaderProgram.Delete();
 	outliningProgram.Delete();
-	//Delete GLFWwindow object after closing it
 	glfwDestroyWindow(window);
-	//Terminates GLFW before ending the program
 	glfwTerminate();
 	return 0;
 }
