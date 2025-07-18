@@ -3,6 +3,14 @@
 const unsigned int width = 1024;
 const unsigned int height = 1024;
 
+bool debugFPS = false;
+// Variables to create periodic event for FPS displaying
+double prevTime = 0.0f;
+double currTime = 0.0f;
+double timeDiff;
+// Keeps track of the amount of frames in timeDiff
+unsigned int counter = 0;
+
 int main() {
 	//Initialize GLFW
 	glfwInit();
@@ -16,7 +24,7 @@ int main() {
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	//Create a GLFWwindow object with given dimensions, the name and wether it should be fullscreen.
-	GLFWwindow* window = glfwCreateWindow(width, height, "FreeOpenGL", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(width, height, "OpenGL study Main", NULL, NULL);
 
 	//Error check if windows failed to be created
 	if (window == NULL)
@@ -52,7 +60,6 @@ int main() {
 	
 	//Enables depth buffer
 	glEnable(GL_DEPTH_TEST);
-	
 	// Enables Cull Facing
 	glEnable(GL_CULL_FACE);
 	// Keeps front faces
@@ -63,17 +70,10 @@ int main() {
 	Camera camera(width, height, glm::vec3(0.f, 0.f, 2.f));
 
 	//Load Model------------------------------------------------------------------
-	std::string statueModelPath = "Models/statue/scene.gltf";
-	Model statueModel(statueModelPath.c_str(), true);
+	std::string modelPath = "Models/statue/scene.gltf";
+	Model model(modelPath.c_str(), true);
 	//----------------------------------------------------------------------------
 	
-	// Variables to create periodic event for FPS displaying
-	double prevTime = 0.0f;
-	double currTime = 0.0f;
-	double timeDiff;
-	// Keeps track of the amount of frames in timeDiff
-	unsigned int counter = 0;
-
 	//Main while loop
 	while (!glfwWindowShouldClose(window)) {
 
@@ -83,12 +83,15 @@ int main() {
 
 		if (timeDiff >= 1.0 / 30.0)
 		{
-			// Creates new title
-			std::string FPS = std::to_string((1.0 / timeDiff) * counter);
-			std::string TimeBetweenFramesInMS = std::to_string((timeDiff / counter) * 1000);
-			std::string newTitle = "OpenGLStudy - Face Culling and FPS - " + FPS + "FPS / " + TimeBetweenFramesInMS + "ms";
-			glfwSetWindowTitle(window, newTitle.c_str());
-
+			if (debugFPS)
+			{
+				// Creates new title
+				std::string FPS = std::to_string((1.0 / timeDiff) * counter);
+				std::string TimeBetweenFramesInMS = std::to_string((timeDiff / counter) * 1000);
+				std::string newTitle = "OpenGLStudy - Face Culling and FPS - " + FPS + "FPS / " + TimeBetweenFramesInMS + "ms";
+				glfwSetWindowTitle(window, newTitle.c_str());
+			}
+			
 			// Resets times and counter
 			prevTime = currTime;
 			counter = 0;
@@ -105,7 +108,7 @@ int main() {
 
 		camera.updateMatrix(45.f, 0.1f, 100.f);
 
-		statueModel.Draw(shaderProgram, camera);
+		model.Draw(shaderProgram, camera);
 
 		// Swap the back buffer with the front buffer
 		glfwSwapBuffers(window);
