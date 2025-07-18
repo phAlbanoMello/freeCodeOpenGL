@@ -15,12 +15,15 @@
     </Filter>
     <Filter Include="Resource Files\Shaders">
       <UniqueIdentifier>{cfabb57e-a095-476d-b9e5-98b1a354a758}</UniqueIdentifier>
+      <Extensions>frag;vert</Extensions>
     </Filter>
     <Filter Include="Resource Files\Textures">
       <UniqueIdentifier>{4c0a4535-95fd-4cda-83e8-28ce815b8e8f}</UniqueIdentifier>
+      <Extensions>png;jpg;bmp</Extensions>
     </Filter>
     <Filter Include="Resource Files\Models">
       <UniqueIdentifier>{e791bd42-29e7-4c26-9f49-1a673d54ae2d}</UniqueIdentifier>
+      <Extensions>gltf;bin</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
