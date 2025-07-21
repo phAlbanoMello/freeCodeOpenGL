@@ -23,40 +23,40 @@ void Camera::Matrix(Shader& shader, const char* uniform)
     glUniformMatrix4fv(glGetUniformLocation(shader.ID, uniform), 1, GL_FALSE, glm::value_ptr(cameraMatrix));
 }
 
-void Camera::Inputs(GLFWwindow* window) {
+void Camera::Inputs(GLFWwindow* window, float deltaTime) {
     // Move forward
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        Position += speed * Orientation;
+        Position += currentSpeed * Orientation;
     }
     // Move backward
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        Position += speed * -Orientation;
+        Position += currentSpeed * -Orientation;
     }
     // Move left
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        Position += speed * -glm::normalize(glm::cross(Orientation, Up));
+        Position += currentSpeed * -glm::normalize(glm::cross(Orientation, Up));
     }
     // Move right
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        Position += speed * glm::normalize(glm::cross(Orientation, Up));
+        Position += currentSpeed * glm::normalize(glm::cross(Orientation, Up));
     }
     // Move up
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
-        Position += speed * Up;
+        Position += currentSpeed * Up;
     }
     // Move down
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS) {
-        Position += speed * -Up;
+        Position += currentSpeed * -Up;
     }
-    //Increased Speed (Left Shift Press)
+    //Increased currentSpeed (Left Shift Press)
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
     {
-        speed = 0.1f;
+        currentSpeed += speedIncreaseOT * deltaTime;
     }
-    //Normal Speed (Left Shift Release)
+    //Normal currentSpeed (Left Shift Release)
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE)
     {
-        speed = 0.02f;
+        currentSpeed = initialSpeed;
     }
 
     //Mouse Control

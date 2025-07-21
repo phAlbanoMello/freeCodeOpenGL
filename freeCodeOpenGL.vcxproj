@@ -168,6 +168,8 @@
     <None Include="Models\crow-outline\scene.gltf" />
     <None Include="Models\crow\scene.bin" />
     <None Include="Models\crow\scene.gltf" />
+    <None Include="Models\grass\scene.bin" />
+    <None Include="Models\grass\scene.gltf" />
     <None Include="Models\grindstone\scene.bin" />
     <None Include="Models\grindstone\scene.gltf" />
     <None Include="Models\ground\scene.bin" />
@@ -182,6 +184,10 @@
     <None Include="Models\sword\scene.gltf" />
     <None Include="Models\trees\scene.bin" />
     <None Include="Models\trees\scene.gltf" />
+    <None Include="Models\t_ground\scene.bin" />
+    <None Include="Models\t_ground\scene.gltf" />
+    <None Include="Models\windows\scene.bin" />
+    <None Include="Models\windows\scene.gltf" />
     <None Include="outlining.frag" />
     <None Include="outlining.vert" />
   </ItemGroup>
@@ -203,6 +209,8 @@
     <Image Include="Models\bunny\metallicRoughness.png" />
     <Image Include="Models\crow-outline\diffuse.png" />
     <Image Include="Models\crow\diffuse.png" />
+    <Image Include="Models\grass\diffuse.png" />
+    <Image Include="Models\grass\specular.png" />
     <Image Include="Models\grindstone\textures\Main_baseColor.jpeg" />
     <Image Include="Models\grindstone\textures\Main_metallicRoughness.png" />
     <Image Include="Models\grindstone\textures\Main_normal.png" />
@@ -214,6 +222,9 @@
     <Image Include="Models\sword\textures\Object001_mtl_baseColor.jpeg" />
     <Image Include="Models\trees\diffuse.png" />
     <Image Include="Models\trees\specular.png" />
+    <Image Include="Models\t_ground\diffuse.png" />
+    <Image Include="Models\t_ground\specular.png" />
+    <Image Include="Models\windows\diffuse.png" />
     <Image Include="planksAO.png" />
     <Image Include="planksBC.png" />
   </ItemGroup>

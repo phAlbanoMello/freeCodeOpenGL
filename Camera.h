@@ -23,15 +23,17 @@ public:
 	int	width;
 	int height;
 
-	float speed = 0.02f;
+	float initialSpeed = 0.02f;
+	float currentSpeed = 0.02f;
 	float sensitivity = 100.f;
+	float speedIncreaseOT = 0.01f;
 
 	Camera(int width, int height, glm::vec3 position);
 
 	//Updates and exports the camera matrix to the Vertex Shader
 	void updateMatrix(float FOVdeg, float nearPlane, float farPlane);
 	void Matrix(Shader& shader, const char* uniform);
-	void Inputs(GLFWwindow* window);
+	void Inputs(GLFWwindow* window, float deltaTime);
 };
 
 #endif

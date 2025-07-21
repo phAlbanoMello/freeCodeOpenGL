@@ -63,27 +63,29 @@ int main() {
 	Camera camera(width, height, glm::vec3(0.f, 0.f, 2.f));
 
 	// Load models
-	std::string modelPath = "Models/crow/scene.gltf";
-	std::string outlinePath = "Models/crow-outline/scene.gltf";
+	std::string modelPath = "Models/t_ground/scene.gltf";
 	Model model(modelPath.c_str(), true);
-	Model Outline(outlinePath.c_str(), true);
+
+	std::string grassModelPath = "Models/grass/scene.gltf";
+	Model grassModel(grassModelPath.c_str(), true);
 
 	// Main render loop
 	while (!glfwWindowShouldClose(window)) {
 		currTime = glfwGetTime();
 		timeDiff = currTime - prevTime;
 		counter++;
+		float deltaTime = (timeDiff / counter) * 1000;
 
 		if (timeDiff >= 1.0 / 30.0) {
 			if (debugFPS) {
 				std::string FPS = std::to_string((1.0 / timeDiff) * counter);
-				std::string TimeBetweenFramesInMS = std::to_string((timeDiff / counter) * 1000);
+				std::string TimeBetweenFramesInMS = std::to_string(deltaTime);
 				std::string newTitle = "OpenGLStudy - Face Culling and FPS - " + FPS + "FPS / " + TimeBetweenFramesInMS + "ms";
 				glfwSetWindowTitle(window, newTitle.c_str());
 			}
 			prevTime = currTime;
 			counter = 0;
-			camera.Inputs(window);
+			camera.Inputs(window, deltaTime);
 		}
 
 		// Clear buffers
@@ -93,22 +95,8 @@ int main() {
 		// Update camera matrix
 		camera.updateMatrix(45.f, 0.1f, 100.f);
 
-		// Draw main model and mark stencil
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilMask(0xFF);
 		model.Draw(shaderProgram, camera);
-
-		// Draw outline where stencil is not equal to 1
-		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-		glStencilMask(0x00);
-		outliningProgram.Activate();
-		glCullFace(GL_FRONT); // Invert culling for outline
-		Outline.Draw(outliningProgram, camera);
-		glCullFace(GL_BACK);  // Restore culling
-
-		// Restore stencil state
-		glStencilMask(0xFF);
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		grassModel.Draw(shaderProgram, camera);
 
 		// Swap buffers and poll events
 		glfwSwapBuffers(window);
@@ -117,7 +105,6 @@ int main() {
 
 	// Cleanup
 	shaderProgram.Delete();
-	outliningProgram.Delete();
 	glfwDestroyWindow(window);
 	glfwTerminate();
 	return 0;
