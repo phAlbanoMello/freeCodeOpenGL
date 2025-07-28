@@ -160,6 +160,7 @@
   <ItemGroup>
     <None Include="default.frag" />
     <None Include="default.vert" />
+    <None Include="grass.frag" />
     <None Include="light.frag" />
     <None Include="light.vert" />
     <None Include="Models\bunny\scene.bin" />
@@ -190,6 +191,7 @@
     <None Include="Models\windows\scene.gltf" />
     <None Include="outlining.frag" />
     <None Include="outlining.vert" />
+    <None Include="windows.frag" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />

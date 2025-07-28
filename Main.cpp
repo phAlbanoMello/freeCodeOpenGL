@@ -11,6 +11,18 @@ double currTime = 0.0f;
 double timeDiff;
 unsigned int counter = 0;
 
+const unsigned int numWindows = 100;
+glm::vec3 positionsWin[numWindows];
+float rotationsWin[numWindows];
+
+unsigned int orderDraw[numWindows];
+float distanceCamera[numWindows];
+
+int compare(const void* a, const void* b) {
+	double diff = distanceCamera[*(int*)b] - distanceCamera[*(int*)a];
+	return (0 < diff) - (diff < 0);
+} //ToDo : I need to understand this!!!!
+
 int main() {
 	// Initialize GLFW
 	glfwInit();
@@ -40,7 +52,8 @@ int main() {
 
 	// Load shaders
 	Shader shaderProgram("default.vert", "default.frag");
-	Shader outliningProgram("outlining.vert", "outlining.frag");
+	Shader grassProgram("default.vert", "grass.frag");
+	Shader winProgram("default.vert", "windows.frag");
 
 	// Set up lighting
 	glm::vec4 lightColor = glm::vec4(1.0f);
@@ -50,24 +63,46 @@ int main() {
 	shaderProgram.Activate();
 	glUniform4f(glGetUniformLocation(shaderProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 	glUniform3f(glGetUniformLocation(shaderProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
+	grassProgram.Activate();
+	glUniform4f(glGetUniformLocation(grassProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
+	glUniform3f(glGetUniformLocation(grassProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
 
-	// Enable depth testing, face culling, and stencil buffer
+	// Enables the Depth Buffer
 	glEnable(GL_DEPTH_TEST);
+	// Enables Cull Facing
 	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-	glFrontFace(GL_CCW);
-	glEnable(GL_STENCIL_TEST);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	// Keeps front faces
+	glCullFace(GL_FRONT);
+	// Uses counter clock-wise standard
+	glFrontFace(GL_CW);
+	// Configures the blending function
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// Initialize camera
 	Camera camera(width, height, glm::vec3(0.f, 0.f, 2.f));
 
 	// Load models
-	std::string modelPath = "Models/t_ground/scene.gltf";
-	Model model(modelPath.c_str(), true);
+	std::string groundModelPath = "Models/t_ground/scene.gltf";
+	Model groundModel(groundModelPath.c_str(), true);
 
 	std::string grassModelPath = "Models/grass/scene.gltf";
 	Model grassModel(grassModelPath.c_str(), true);
+
+	std::string windowsModelPath = "Models/windows/scene.gltf";
+	Model windowsModels(windowsModelPath.c_str(), true);
+
+	//Generating windows
+	for (unsigned int i = 0; i < numWindows; i++)
+	{
+		positionsWin[i] = glm::vec3(
+			-15.0f + static_cast <float>(rand()) / (static_cast <float>(RAND_MAX / (15.0f - (-15.0f)))),
+			1.0f + static_cast <float>(rand()) / (static_cast <float>(RAND_MAX / (4.0f - 1.0f))),
+			-15.0f + static_cast <float>(rand()) / (static_cast <float>(RAND_MAX / (15.0f - (-15.0f))))
+		);
+
+		rotationsWin[i] = static_cast <float>(rand()) / (static_cast <float>(RAND_MAX / 1.0f));
+		orderDraw[i] = i;
+	}
 
 	// Main render loop
 	while (!glfwWindowShouldClose(window)) {
@@ -95,8 +130,29 @@ int main() {
 		// Update camera matrix
 		camera.updateMatrix(45.f, 0.1f, 100.f);
 
-		model.Draw(shaderProgram, camera);
-		grassModel.Draw(shaderProgram, camera);
+		groundModel.Draw(shaderProgram, camera);
+
+		// Disable cull face so that grass and windows have both faces
+		glDisable(GL_CULL_FACE);
+		grassModel.Draw(grassProgram, camera);
+		glEnable(GL_BLEND);
+
+		// Get distance from each window to the camera
+		for (unsigned int i = 0; i < numWindows; i++)
+		{
+			distanceCamera[i] = glm::length(camera.Position - positionsWin[i]);
+		}
+
+		// Sort windows by distance from camera
+		qsort(orderDraw, numWindows, sizeof(unsigned int), compare);
+
+		// Draw windows
+		for (unsigned int i = 0; i < numWindows; i++)
+		{
+			windowsModels.Draw(winProgram, camera, positionsWin[orderDraw[i]], glm::quat(1.0f, 0.0f, rotationsWin[orderDraw[i]], 0.0f));
+		}
+		glDisable(GL_BLEND);
+		glEnable(GL_CULL_FACE);
 
 		// Swap buffers and poll events
 		glfwSwapBuffers(window);
@@ -105,6 +161,9 @@ int main() {
 
 	// Cleanup
 	shaderProgram.Delete();
+	grassProgram.Delete();
+	winProgram.Delete();
+
 	glfwDestroyWindow(window);
 	glfwTerminate();
 	return 0;

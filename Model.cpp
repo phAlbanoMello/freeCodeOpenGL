@@ -13,11 +13,23 @@ Model::Model(const char* file, bool flipUV_Y)
 	traverseNode(0);
 }
 
-void Model::Draw(Shader& shader, Camera& camera)
+void Model::Draw(
+	Shader& shader,
+	Camera& camera,
+	glm::vec3 translation,
+	glm::quat rotation,
+	glm::vec3 scale)
 {
+	// Build transformation matrix from translation, rotation (as matrix), and scale
+	glm::mat4 model = glm::translate(glm::mat4(1.0f), translation) *
+		glm::toMat4(rotation) *
+		glm::scale(glm::mat4(1.0f), scale);
+
+	// Draw each mesh with the final transformation
 	for (unsigned int i = 0; i < meshes.size(); i++)
 	{
-		meshes[i].Mesh::Draw(shader, camera, matricesMeshes[i]);
+		glm::mat4 finalMatrix = model * matricesMeshes[i]; // Apply per-mesh transformation
+		meshes[i].Mesh::Draw(shader, camera, finalMatrix);
 	}
 }
 
