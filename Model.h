@@ -48,9 +48,5 @@ private:
 
 	template <typename VecType, int N>
 	std::vector<VecType> groupFloatsVecN(const std::vector<float>& floatVec);
-
-	/*std::vector<glm::vec2> groupFloatsVec2(std::vector<float> floatVec);
-	std::vector<glm::vec3> groupFloatsVec3(std::vector<float> floatVec);
-	std::vector<glm::vec4> groupFloatsVec4(std::vector<float> floatVec);*/
 };
 #endif

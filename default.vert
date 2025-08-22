@@ -31,7 +31,7 @@ void main()
    Normal = aNormal;
    // Pass color and texture coordinates to the fragment shader
    color = aColor;
-   texCoord = aTex;
+   texCoord = mat2(0.0, -1.0, 1.0, 0.0) * aTex;
 
    // Transform vertex position to clip space and set gl_Position
    gl_Position = camMatrix * vec4(crntPos, 1.0);

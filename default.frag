@@ -1,118 +1,93 @@
 #version 330 core
 
-// Final output color of the fragment
 out vec4 FragColor;
 
-// Inputs from the vertex shader
 in vec3 crntPos;
-//Imports the normal from the Vertex Shader
 in vec3 Normal;
-//Imports the color from the Vertex Shader
 in vec3 color;
-//Imports the texture coordinates from the Vertex Shader
 in vec2 texCoord;
 
-// Texture samplers
 uniform sampler2D diffuse0;
 uniform sampler2D specular0;
 
-// Lighting and camera uniforms
 uniform vec4 lightColor;
-//Gets the position of the light from main
 uniform vec3 lightPos;
-//Gets the position of the Camera from main
 uniform vec3 camPos;
 
-// Ambient light intensity
-const float ambient = 0.5;
-
 vec4 pointLight()
-{
+{	
 	vec3 lightVec = lightPos - crntPos;
-	
-	float dist = length(lightVec);
-	float a = 3.f;
-	float b = 0.7f;
-	float intensity = 1.f / (a * dist * dist + b * dist + 1.f);
 
+	float dist = length(lightVec);
+	float a = 3.0;
+	float b = 0.7;
+	float inten = 1.0f / (a * dist * dist + b * dist + 1.0f);
+
+	float ambient = 0.20f;
+
+	// diffuse lighting
 	vec3 normal = normalize(Normal);
 	vec3 lightDirection = normalize(lightVec);
-	float diffuse = max(dot(normal, lightDirection), 0.f) * 0.9f; //Trying to soften diffuse
-	
-	float specularLight = 0.2f;
+	float diffuse = max(dot(normal, lightDirection), 0.0f);
+
+	// specular lighting
+	float specularLight = 0.50f;
 	vec3 viewDirection = normalize(camPos - crntPos);
 	vec3 reflectionDirection = reflect(-lightDirection, normal);
-	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.f), 32);
+	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.0f), 16);
 	float specular = specAmount * specularLight;
 
-    // Final color composition
-    vec4 diff = texture(diffuse0, texCoord);
-    float specVal = texture(specular0, texCoord).r;
-    return (diff * (diffuse * intensity + ambient) + specVal * specular * intensity) * lightColor;
+	return (texture(diffuse0, texCoord) * (diffuse * inten + ambient) + texture(specular0, texCoord).r * specular * inten) * lightColor;
 }
 
-vec4 directLight(){
+vec4 directLight()
+{
+	float ambient = 0.20f;
 
 	vec3 normal = normalize(Normal);
-	vec3 lightDirection = normalize(vec3(1.f, 1.f, 0.f));
-	float diffuse = max(dot(normal, lightDirection), 0.f) * 0.9f;
-	
-	float specularLight = 0.2f;
+	vec3 lightDirection = normalize(vec3(1.0f, 1.0f, 0.0f));
+	float diffuse = max(dot(normal, lightDirection), 0.0f);
+
+	float specularLight = 0.50f;
 	vec3 viewDirection = normalize(camPos - crntPos);
 	vec3 reflectionDirection = reflect(-lightDirection, normal);
-	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.f), 32);
+	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.0f), 16);
 	float specular = specAmount * specularLight;
 
-    vec4 diff = texture(diffuse0, texCoord);
-    float specVal = texture(specular0, texCoord).r;
-    return (diff * (diffuse + ambient) + specVal * specular) * lightColor;
+	return (texture(diffuse0, texCoord) * (diffuse + ambient) + texture(specular0, texCoord).r * specular) * lightColor;
 }
 
 vec4 spotLight()
 {
-    float outerCone = 0.8;  // Light fades out beyond this angle (cosine)
-    float innerCone = 0.95; // Full brightness within this angle (cosine)
+	// controls how big the area that is lit up is
+	float outerCone = 0.90f;
+	float innerCone = 0.95f;
+
+	float ambient = 0.20f;
 
 	vec3 normal = normalize(Normal);
 	vec3 lightDirection = normalize(lightPos - crntPos);
-	float diffuse = max(dot(normal, lightDirection), 0.f) * 0.9f;
-	
-	float specularLight = 0.2f;
+	float diffuse = max(dot(normal, lightDirection), 0.0f);
+
+	float specularLight = 0.50f;
 	vec3 viewDirection = normalize(camPos - crntPos);
 	vec3 reflectionDirection = reflect(-lightDirection, normal);
-	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.f), 32);
+	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.0f), 16);
 	float specular = specAmount * specularLight;
 
-    // Spotlight intensity based on angle
-    float angle = dot(vec3(0.0, -1.0, 0.0), -lightDirection);
-    float intensity = clamp((angle - outerCone) / (innerCone - outerCone), 0.0, 1.0);
+	// calculates the intensity of the crntPos based on its angle to the center of the light cone
+	float angle = dot(vec3(0.0f, -1.0f, 0.0f), -lightDirection);
+	float inten = clamp((angle - outerCone) / (innerCone - outerCone), 0.0f, 1.0f);
 
-    vec4 diff = texture(diffuse0, texCoord);
-    float specVal = texture(specular0, texCoord).r;
-    return (diff * (diffuse * intensity + ambient) + specVal * specular * intensity) * lightColor;
+	return (texture(diffuse0, texCoord) * (diffuse * inten + ambient) + texture(specular0, texCoord).r * specular * inten) * lightColor;
 }
 
-//Depth functions
-float near = 0.1;
-float far = 100.0;
-
-float linearizeDepth(float depth)
-{
-    return (2.0 * near * far) / (far + near - (depth * 2.0 - 1.0) * (far - near));
-}
-
-float logisticDepth(float depth, float steepness, float offset)
-{
-    float zVal = linearizeDepth(depth);
-    return 1.0 / (1.0 + exp(-steepness * (zVal - offset)));
-}
 
 void main()
 {
-	
+	// outputs final color
 	FragColor = directLight();
 }
-
 /* Notes on Diffuse lighting!
 	This Diffuse lighting is based on the -Lambertian reflectance model-, 
 	which states that the brightness of a surface depends on the angle between 

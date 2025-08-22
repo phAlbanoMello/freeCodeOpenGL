@@ -11,6 +11,18 @@ double currTime = 0.0f;
 double timeDiff;
 unsigned int counter = 0;
 
+//Rectangle for framebuffer
+float rectangleVertices[] =
+{
+	 1.0f, -1.0f,  1.0f, 0.0f,
+	-1.0f, -1.0f,  0.0f, 0.0f,
+	-1.0f,  1.0f,  0.0f, 1.0f,
+
+	 1.0f,  1.0f,  1.0f, 1.0f,
+	 1.0f, -1.0f,  1.0f, 0.0f,
+	-1.0f,  1.0f,  0.0f, 1.0f
+};
+
 int main() {
 	// Initialize GLFW
 	glfwInit();
@@ -22,6 +34,7 @@ int main() {
 
 	// Create window
 	GLFWwindow* window = glfwCreateWindow(width, height, "OpenGL study Main", NULL, NULL);
+
 	if (window == NULL) {
 		std::cerr << "Failed to create GLFW window" << std::endl;
 		glfwTerminate();
@@ -40,33 +53,76 @@ int main() {
 
 	// Load shaders
 	Shader shaderProgram("default.vert", "default.frag");
-	Shader outliningProgram("outlining.vert", "outlining.frag");
+	Shader framebufferProgram("framebuffer.vert", "framebuffer.frag");
 
 	// Set up lighting
 	glm::vec4 lightColor = glm::vec4(1.0f);
 	glm::vec3 lightPos = glm::vec3(0.5f);
-	glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), lightPos);
 
 	shaderProgram.Activate();
 	glUniform4f(glGetUniformLocation(shaderProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 	glUniform3f(glGetUniformLocation(shaderProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
 
-	// Enable depth testing, face culling, and stencil buffer
+	framebufferProgram.Activate();
+	glUniform1i(glGetUniformLocation(framebufferProgram.ID, "screenTexture"), 0);
+
+	//For pixelization framebuffer shader
+	float pixelSizeValue = 0.005f;
+	int location = glGetUniformLocation(framebufferProgram.ID, "pixelSize");
+	glUniform1f(location, pixelSizeValue);
+	
+	//For blur framebufffer
+	/*float blurSize = 3.0f / height;
+	glUniform1f(glGetUniformLocation(framebufferProgram.ID, "blurSize"), blurSize);*/
+
+
+	// Enable depth testing, face culling
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-	glFrontFace(GL_CCW);
-	glEnable(GL_STENCIL_TEST);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glDepthFunc(GL_LESS);
 
 	// Initialize camera
 	Camera camera(width, height, glm::vec3(0.f, 0.f, 2.f));
 
 	// Load models
 	std::string modelPath = "Models/crow/scene.gltf";
-	std::string outlinePath = "Models/crow-outline/scene.gltf";
 	Model model(modelPath.c_str(), true);
-	Model Outline(outlinePath.c_str(), true);
+
+	// Prepare framebuffer rectangle VBO and VAO
+	unsigned int rectVAO, rectVBO;
+	glGenVertexArrays(1, &rectVAO);
+	glGenBuffers(1, &rectVBO);
+	glBindVertexArray(rectVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, rectVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(rectangleVertices), &rectangleVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	////-----------------------------------------------
+
+	unsigned int FrameBufferObject;
+	glGenFramebuffers(1, &FrameBufferObject);
+	glBindFramebuffer(GL_FRAMEBUFFER, FrameBufferObject);
+
+	unsigned int frameBufferTexture;
+	glGenTextures(1, &frameBufferTexture);
+	glBindTexture(GL_TEXTURE_2D, frameBufferTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frameBufferTexture, 0);
+
+	unsigned int RenderbufferObject;
+	glGenRenderbuffers(1, &RenderbufferObject);
+	glBindRenderbuffer(GL_RENDERBUFFER, RenderbufferObject);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RenderbufferObject);
+
+	auto fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if (fboStatus != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "Framebuffer error: " << fboStatus << std::endl;
 
 	// Main render loop
 	while (!glfwWindowShouldClose(window)) {
@@ -86,29 +142,24 @@ int main() {
 			camera.Inputs(window);
 		}
 
-		// Clear buffers
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		glBindFramebuffer(GL_FRAMEBUFFER, FrameBufferObject);
+
+		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
 
 		// Update camera matrix
 		camera.updateMatrix(45.f, 0.1f, 100.f);
 
-		// Draw main model and mark stencil
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilMask(0xFF);
 		model.Draw(shaderProgram, camera);
 
-		// Draw outline where stencil is not equal to 1
-		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-		glStencilMask(0x00);
-		outliningProgram.Activate();
-		glCullFace(GL_FRONT); // Invert culling for outline
-		Outline.Draw(outliningProgram, camera);
-		glCullFace(GL_BACK);  // Restore culling
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		framebufferProgram.Activate();
+		glBindVertexArray(rectVAO);
 
-		// Restore stencil state
-		glStencilMask(0xFF);
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glDisable(GL_DEPTH_TEST);// prevents framebuffer rectangle from being discarded
+		glBindTexture(GL_TEXTURE_2D, frameBufferTexture);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		// Swap buffers and poll events
 		glfwSwapBuffers(window);
@@ -117,7 +168,8 @@ int main() {
 
 	// Cleanup
 	shaderProgram.Delete();
-	outliningProgram.Delete();
+	glDeleteFramebuffers(1, &FrameBufferObject);
+
 	glfwDestroyWindow(window);
 	glfwTerminate();
 	return 0;
