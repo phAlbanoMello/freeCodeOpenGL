@@ -92,6 +92,37 @@ Texture::Texture(const char* image, const char* texType, GLuint slot)
 	glBindTexture(GL_TEXTURE_2D,0);
 }
 
+void Texture::BindTexturesToCubeMap(const std::string cubemapFaces[], unsigned int faceCount)
+{
+	for (unsigned int i = 0; i < faceCount; i++)
+	{
+		int width, height, nrChannels;
+		stbi_set_flip_vertically_on_load(false); // Don't flip for cubemaps
+		unsigned char* data = stbi_load(cubemapFaces[i].c_str(), &width, &height, &nrChannels, 0);
+
+		if (data)
+		{
+			glTexImage2D(
+				GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+				0,
+				GL_RGB,
+				width,
+				height,
+				0,
+				GL_RGB,
+				GL_UNSIGNED_BYTE,
+				data
+			);
+			stbi_image_free(data);
+		}
+		else
+		{
+			std::cout << "Failed to load texture: " << cubemapFaces[i] << std::endl;
+			stbi_image_free(data);
+		}
+	}
+}
+
 void Texture::texUnit(Shader& shader, const char* uniform, GLuint unit)
 {
 	// Gets the location of the uniform

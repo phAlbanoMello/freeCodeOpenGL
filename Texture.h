@@ -15,6 +15,8 @@ public:
 	
 	Texture(const char* image, const char* texType, GLuint slot);
 
+	static void BindTexturesToCubeMap(const std::string cubemapFaces[], unsigned int faceCount);
+
 	// Assigns a texture unit to a texture
 	void texUnit(Shader& shader, const char* uniform, GLuint unit);
 	// Binds a texture
