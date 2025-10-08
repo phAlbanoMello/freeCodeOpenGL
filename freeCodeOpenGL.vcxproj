@@ -159,9 +159,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="default.frag" />
+    <None Include="default.geom" />
     <None Include="default.vert" />
+    <None Include="fluid.geom" />
     <None Include="light.frag" />
     <None Include="light.vert" />
+    <None Include="lowPoly.geom" />
     <None Include="Models\bunny\scene.bin" />
     <None Include="Models\bunny\scene.gltf" />
     <None Include="Models\crow-outline\scene.bin" />
@@ -182,8 +185,11 @@
     <None Include="Models\sword\scene.gltf" />
     <None Include="Models\trees\scene.bin" />
     <None Include="Models\trees\scene.gltf" />
+    <None Include="normals.frag" />
+    <None Include="normals.geom" />
     <None Include="outlining.frag" />
     <None Include="outlining.vert" />
+    <None Include="wavingGrass.geom" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />

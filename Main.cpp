@@ -39,34 +39,30 @@ int main() {
 	glViewport(0, 0, width, height);
 
 	// Load shaders
-	Shader shaderProgram("default.vert", "default.frag");
-	Shader outliningProgram("outlining.vert", "outlining.frag");
+	Shader shaderProgram("default.vert", "default.frag", "wavingGrass.geom");
+	//Shader normalsShader("default.vert", "normals.frag", "normals.geom");
 
 	// Set up lighting
 	glm::vec4 lightColor = glm::vec4(1.0f);
 	glm::vec3 lightPos = glm::vec3(0.5f);
-	glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), lightPos);
 
 	shaderProgram.Activate();
 	glUniform4f(glGetUniformLocation(shaderProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 	glUniform3f(glGetUniformLocation(shaderProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
+	glUniform1f(glGetUniformLocation(shaderProgram.ID, "u_time"), glfwGetTime());
 
-	// Enable depth testing, face culling, and stencil buffer
+	// Enable depth testing and face culling
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
-	glEnable(GL_STENCIL_TEST);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 	// Initialize camera
 	Camera camera(width, height, glm::vec3(0.f, 0.f, 2.f));
 
 	// Load models
-	std::string modelPath = "Models/crow/scene.gltf";
-	std::string outlinePath = "Models/crow-outline/scene.gltf";
+	std::string modelPath = "Models/statue/scene.gltf";
 	Model model(modelPath.c_str(), true);
-	Model Outline(outlinePath.c_str(), true);
 
 	// Main render loop
 	while (!glfwWindowShouldClose(window)) {
@@ -88,27 +84,16 @@ int main() {
 
 		// Clear buffers
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// Update camera matrix
 		camera.updateMatrix(45.f, 0.1f, 100.f);
 
-		// Draw main model and mark stencil
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilMask(0xFF);
+		float timeValue = glfwGetTime();
+		glUniform1f(glGetUniformLocation(shaderProgram.ID, "u_time"), timeValue);
+
 		model.Draw(shaderProgram, camera);
-
-		// Draw outline where stencil is not equal to 1
-		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-		glStencilMask(0x00);
-		outliningProgram.Activate();
-		glCullFace(GL_FRONT); // Invert culling for outline
-		Outline.Draw(outliningProgram, camera);
-		glCullFace(GL_BACK);  // Restore culling
-
-		// Restore stencil state
-		glStencilMask(0xFF);
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		//model.Draw(normalsShader, camera);
 
 		// Swap buffers and poll events
 		glfwSwapBuffers(window);
@@ -117,7 +102,7 @@ int main() {
 
 	// Cleanup
 	shaderProgram.Delete();
-	outliningProgram.Delete();
+	//normalsShader.Delete();
 	glfwDestroyWindow(window);
 	glfwTerminate();
 	return 0;
