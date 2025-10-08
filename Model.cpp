@@ -23,26 +23,43 @@ void Model::Draw(Shader& shader, Camera& camera)
 
 void Model::loadMesh(unsigned int indMesh)
 {
-	unsigned int posAccInd = JSON["meshes"][indMesh]["primitives"][0]["attributes"]["POSITION"];
-	unsigned int normalAccInd = JSON["meshes"][indMesh]["primitives"][0]["attributes"]["NORMAL"];
-	unsigned int texAccInd = JSON["meshes"][indMesh]["primitives"][0]["attributes"]["TEXCOORD_0"];
-	unsigned int indAccInd = JSON["meshes"][indMesh]["primitives"][0]["indices"];
+	const auto& primitive = JSON["meshes"][indMesh]["primitives"][0];
+	const auto& attributes = primitive["attributes"];
 
-	std::vector<float> posVec = getFloats(JSON["accessors"][posAccInd]);
+	// Verificações seguras para os accessors
+	if (!attributes.contains("POSITION") || !attributes["POSITION"].is_number_unsigned()) return;
+	if (!attributes.contains("NORMAL") || !attributes["NORMAL"].is_number_unsigned()) return;
+	if (!attributes.contains("TEXCOORD_0") || !attributes["TEXCOORD_0"].is_number_unsigned()) return;
+	if (!primitive.contains("indices") || !primitive["indices"].is_number_unsigned()) return;
+
+	unsigned int posAccInd = attributes["POSITION"];
+	unsigned int normalAccInd = attributes["NORMAL"];
+	unsigned int texAccInd = attributes["TEXCOORD_0"];
+	unsigned int indAccInd = primitive["indices"];
+
+	// Verificações adicionais nos accessors
+	if (JSON["accessors"].size() <= std::max({ posAccInd, normalAccInd, texAccInd, indAccInd })) return;
+
+	const auto& posAccessor = JSON["accessors"][posAccInd];
+	const auto& normalAccessor = JSON["accessors"][normalAccInd];
+	const auto& texAccessor = JSON["accessors"][texAccInd];
+	const auto& indAccessor = JSON["accessors"][indAccInd];
+
+	std::vector<float> posVec = getFloats(posAccessor);
 	std::vector<glm::vec3> positions = groupFloatsVecN<glm::vec3, 3>(posVec);
-	std::vector<float> normalVec = getFloats(JSON["accessors"][normalAccInd]);
 
+	std::vector<float> normalVec = getFloats(normalAccessor);
 	std::vector<glm::vec3> normals = groupFloatsVecN<glm::vec3, 3>(normalVec);
-	std::vector<float> texVec = getFloats(JSON["accessors"][texAccInd]);
+
+	std::vector<float> texVec = getFloats(texAccessor);
 	std::vector<glm::vec2> texUVs = groupFloatsVecN<glm::vec2, 2>(texVec);
 
 	std::vector<Vertex> vertices = assembleVertices(positions, normals, texUVs);
-	std::vector<GLuint> indices = getIndices(JSON["accessors"][indAccInd]);
+	std::vector<GLuint> indices = getIndices(indAccessor);
 	std::vector<Texture> textures = getTextures();
 
 	meshes.push_back(Mesh(vertices, indices, textures));
 }
-
 void Model::traverseNode(unsigned int nextNode, glm::mat4 matrix)
 {
 	json node = JSON["nodes"][nextNode];
@@ -141,30 +158,57 @@ std::vector<float> Model::getFloats(json accessor)
 {
 	std::vector<float> floatVec;
 
-	unsigned int bufferViewInd = accessor.value("bufferView", 1);
-	unsigned int count = accessor["count"];
-	unsigned int accByteOffset = accessor.value("byteOffset", 0);
-	std::string type = accessor["type"];
+	try {
+		if (!accessor.contains("bufferView") || !accessor["bufferView"].is_number_unsigned()) {
+			throw std::runtime_error("Accessor missing or invalid 'bufferView'");
+		}
+		if (!accessor.contains("count") || !accessor["count"].is_number_unsigned()) {
+			throw std::runtime_error("Accessor missing or invalid 'count'");
+		}
+		if (!accessor.contains("type") || !accessor["type"].is_string()) {
+			throw std::runtime_error("Accessor missing or invalid 'type'");
+		}
 
-	json bufferView = JSON["bufferViews"][bufferViewInd];
-	unsigned int byteOffset = bufferView["byteOffset"];
+		unsigned int bufferViewInd = accessor["bufferView"];
+		unsigned int count = accessor["count"];
+		unsigned int accByteOffset = accessor.value("byteOffset", 0);
+		std::string type = accessor["type"];
 
-	unsigned int numPerVert;
-	if (type == "SCALAR") numPerVert = 1;
-	else if (type == "VEC2") numPerVert = 2;
-	else if (type == "VEC3") numPerVert = 3;
-	else if (type == "VEC4") numPerVert = 4;
-	else throw std::invalid_argument("Type is invalid (not SCALAR, VEC2, VEC3, or VEC4)");
+		if (JSON["bufferViews"].size() <= bufferViewInd) {
+			throw std::runtime_error("Invalid bufferView index");
+		}
 
-	unsigned int beginningOfData = byteOffset + accByteOffset;
-	unsigned int lenghtOfData = count * 4 * numPerVert;
-	for (unsigned int i = beginningOfData; i < beginningOfData + lenghtOfData; i)
-	{
-		unsigned char bytes[] = { data[i++], data[i++], data[i++], data[i++] };
-		float value;
-		std::memcpy(&value, bytes, sizeof(float));
-		floatVec.push_back(value);
+		json bufferView = JSON["bufferViews"][bufferViewInd];
+		if (!bufferView.contains("byteOffset") || !bufferView["byteOffset"].is_number_unsigned()) {
+			throw std::runtime_error("BufferView missing or invalid 'byteOffset'");
+		}
+
+		unsigned int byteOffset = bufferView["byteOffset"];
+
+		unsigned int numPerVert;
+		if (type == "SCALAR") numPerVert = 1;
+		else if (type == "VEC2") numPerVert = 2;
+		else if (type == "VEC3") numPerVert = 3;
+		else if (type == "VEC4") numPerVert = 4;
+		else throw std::invalid_argument("Type is invalid (not SCALAR, VEC2, VEC3, or VEC4)");
+
+		unsigned int beginningOfData = byteOffset + accByteOffset;
+		unsigned int lengthOfData = count * 4 * numPerVert;
+
+		for (unsigned int i = beginningOfData; i < beginningOfData + lengthOfData; i) {
+			unsigned char bytes[] = { data[i++], data[i++], data[i++], data[i++] };
+			float value;
+			std::memcpy(&value, bytes, sizeof(float));
+			floatVec.push_back(value);
+		}
 	}
+	catch (const nlohmann::json::type_error& e) {
+		std::cerr << "JSON type error in getFloats: " << e.what() << std::endl;
+	}
+	catch (const std::exception& e) {
+		std::cerr << "Exception in getFloats: " << e.what() << std::endl;
+	}
+
 	return floatVec;
 }
 
@@ -178,7 +222,14 @@ std::vector<GLuint> Model::getIndices(json accessor)
 	unsigned int componentType = accessor["componentType"];
 
 	json bufferView = JSON["bufferViews"][bufferViewInd];
-	unsigned int byteOffset = bufferView["byteOffset"];
+	
+	unsigned int byteOffset = 0;
+	if (bufferView.contains("byteOffset") && bufferView["byteOffset"].is_number_unsigned()) {
+		byteOffset = bufferView["byteOffset"];
+	}
+	else {
+		std::cerr << "bufferView['byteOffset'] missing or NAN. Using 0 as default." << std::endl;
+	}
 
 	unsigned int beginningOfData = byteOffset + accByteOffset;
 	if (componentType == 5125)

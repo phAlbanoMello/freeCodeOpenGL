@@ -171,6 +171,8 @@
     <None Include="Models\crow-outline\scene.gltf" />
     <None Include="Models\crow\scene.bin" />
     <None Include="Models\crow\scene.gltf" />
+    <None Include="Models\grass\scene.bin" />
+    <None Include="Models\grass\scene.gltf" />
     <None Include="Models\grindstone\scene.bin" />
     <None Include="Models\grindstone\scene.gltf" />
     <None Include="Models\ground\scene.bin" />
@@ -209,6 +211,10 @@
     <Image Include="Models\bunny\metallicRoughness.png" />
     <Image Include="Models\crow-outline\diffuse.png" />
     <Image Include="Models\crow\diffuse.png" />
+    <Image Include="Models\grass\textures\trasparent_grass1_baseColor.png" />
+    <Image Include="Models\grass\textures\trasparent_grass2_baseColor.png" />
+    <Image Include="Models\grass\textures\trasparent_grass3_baseColor.png" />
+    <Image Include="Models\grass\textures\trasparent_grass4_baseColor.png" />
     <Image Include="Models\grindstone\textures\Main_baseColor.jpeg" />
     <Image Include="Models\grindstone\textures\Main_metallicRoughness.png" />
     <Image Include="Models\grindstone\textures\Main_normal.png" />

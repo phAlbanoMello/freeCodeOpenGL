@@ -61,7 +61,7 @@ int main() {
 	Camera camera(width, height, glm::vec3(0.f, 0.f, 2.f));
 
 	// Load models
-	std::string modelPath = "Models/statue/scene.gltf";
+	std::string modelPath = "Models/grass/scene.gltf";
 	Model model(modelPath.c_str(), true);
 
 	// Main render loop

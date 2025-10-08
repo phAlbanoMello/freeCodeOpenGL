@@ -102,5 +102,8 @@ float logisticDepth(float depth, float steepness, float offset)
 
 void main()
 {
+    if(directLight().a < 0.1){
+    discard;
+    }
     FragColor = directLight();
 }
