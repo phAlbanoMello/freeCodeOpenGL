@@ -11,16 +11,54 @@ double currTime = 0.0f;
 double timeDiff;
 unsigned int counter = 0;
 
+float skyboxVertices[] =
+{
+	//   Coordinates
+	-1.0f, -1.0f,  1.0f,//        7--------6
+	 1.0f, -1.0f,  1.0f,//       /|       /|
+	 1.0f, -1.0f, -1.0f,//      4--------5 |
+	-1.0f, -1.0f, -1.0f,//      | |      | |
+	-1.0f,  1.0f,  1.0f,//      | 3------|-2
+	 1.0f,  1.0f,  1.0f,//      |/       |/
+	 1.0f,  1.0f, -1.0f,//      0--------1
+	-1.0f,  1.0f, -1.0f
+};
+
+unsigned int skyboxIndices[] =
+{
+	// Right
+	1, 2, 6,
+	6, 5, 1,
+	// Left
+	0, 4, 7,
+	7, 3, 0,
+	// Top
+	4, 5, 6,
+	6, 7, 4,
+	// Bottom
+	0, 3, 2,
+	2, 1, 0,
+	// Back
+	0, 1, 5,
+	5, 4, 0,
+	// Front
+	3, 7, 6,
+	6, 2, 3
+};
+
+float randf()
+{
+	return -1.0f + (rand() / (RAND_MAX / 2.0f));
+}
+
 int main() {
-	// Initialize GLFW
+//------------------ Open GL Initialization ------------------
 	glfwInit();
 
-	// Set OpenGL version to 3.3 Core Profile
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	// Create window
 	GLFWwindow* window = glfwCreateWindow(width, height, "OpenGL study Main", NULL, NULL);
 	if (window == NULL) {
 		std::cerr << "Failed to create GLFW window" << std::endl;
@@ -29,15 +67,13 @@ int main() {
 	}
 	glfwMakeContextCurrent(window);
 
-	// Load OpenGL functions using GLAD
 	if (!gladLoadGL()) {
 		std::cerr << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
 
-	// Set viewport from bottom-left (0,0) to top-right (width, height)
 	glViewport(0, 0, width, height);
-
+//---------------- Shaders ----------------------------------------
 	// Load shaders
 	Shader shaderProgram("default.vert", "default.frag");
 	Shader outliningProgram("outlining.vert", "outlining.frag");
@@ -50,25 +86,24 @@ int main() {
 	shaderProgram.Activate();
 	glUniform4f(glGetUniformLocation(shaderProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 	glUniform3f(glGetUniformLocation(shaderProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
-
+//--------------- Render state initial setup ---------------------
 	// Enable depth testing, face culling, and stencil buffer
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
-	glEnable(GL_STENCIL_TEST);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 	// Initialize camera
 	Camera camera(width, height, glm::vec3(0.f, 0.f, 2.f));
 
 	// Load models
-	std::string modelPath = "Models/crow/scene.gltf";
-	std::string outlinePath = "Models/crow-outline/scene.gltf";
-	Model model(modelPath.c_str(), true);
-	Model Outline(outlinePath.c_str(), true);
+	std::string jupiterModelPath = "Models/jupiter/scene.gltf";
+	std::string asteroidModelPath = "Models/asteroid/scene.gltf";
 
-	// Main render loop
+	Model model(jupiterModelPath.c_str(), true);
+	Model Outline(jupiterModelPath.c_str(), true);
+
+//------------------ Main render loop --------------------------
 	while (!glfwWindowShouldClose(window)) {
 		currTime = glfwGetTime();
 		timeDiff = currTime - prevTime;

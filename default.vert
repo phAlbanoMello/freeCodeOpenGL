@@ -20,7 +20,6 @@ uniform mat4 translation;
 uniform mat4 rotation;
 uniform mat4 scale;
 
-
 void main()
 {
    //calculates current vertex position to world space (model matrix)
