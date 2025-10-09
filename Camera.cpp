@@ -1,4 +1,5 @@
 #include "Camera.h"
+#include <glm/gtc/epsilon.hpp>
 
 Camera::Camera(int width, int height, glm::vec3 position) {
 	Camera::width = width;
@@ -102,4 +103,31 @@ void Camera::Inputs(GLFWwindow* window) {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         firstClick = true;
     }
+
+    //LogCameraIfChanged();
 }
+
+void Camera::LogCameraIfChanged() {
+    static glm::vec3 lastPosition = glm::vec3(0.0f);
+    static glm::vec3 lastOrientation = glm::vec3(0.0f);
+    const float epsilon = 0.0001f;
+
+    bool positionChanged = glm::epsilonNotEqual(Position.x, lastPosition.x, epsilon) ||
+        glm::epsilonNotEqual(Position.y, lastPosition.y, epsilon) ||
+        glm::epsilonNotEqual(Position.z, lastPosition.z, epsilon);
+
+    bool orientationChanged = glm::epsilonNotEqual(Orientation.x, lastOrientation.x, epsilon) ||
+        glm::epsilonNotEqual(Orientation.y, lastOrientation.y, epsilon) ||
+        glm::epsilonNotEqual(Orientation.z, lastOrientation.z, epsilon);
+
+    if (positionChanged || orientationChanged) {
+        std::cout << "Camera Position: ("
+            << Position.x << ", " << Position.y << ", " << Position.z << ")\n";
+        std::cout << "Camera Orientation: ("
+            << Orientation.x << ", " << Orientation.y << ", " << Orientation.z << ")\n";
+
+        lastPosition = Position;
+        lastOrientation = Orientation;
+    }
+}
+

@@ -14,7 +14,7 @@
 class Camera {
 public:
 	glm::vec3 Position;
-	glm::vec3 Orientation = glm::vec3(0.0f, 0.0f, -1.0f);
+	glm::vec3 Orientation = glm::vec3(-0.032368, -0.0255636, -0.999153);
 	glm::vec3 Up = glm::vec3(0.f, 1.f, 0.f);
 	glm::mat4 cameraMatrix = glm::mat4(1.f);
 
@@ -32,6 +32,8 @@ public:
 	void updateMatrix(float FOVdeg, float nearPlane, float farPlane);
 	void Matrix(Shader& shader, const char* uniform);
 	void Inputs(GLFWwindow* window);
+private:
+	void LogCameraIfChanged();
 };
 
 #endif

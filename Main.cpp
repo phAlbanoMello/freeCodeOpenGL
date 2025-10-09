@@ -95,17 +95,15 @@ int main() {
 	glFrontFace(GL_CCW);
 
 	// Initialize camera
-	Camera camera(width, height, glm::vec3(0.f, 0.f, 2.f));
+	Camera camera(width, height, glm::vec3(3.09498, 2.80734, 85.0286));
 
 	// Load models
-	std::string jupiterModelPath = "Models/jupiter/scene.gltf";
-	std::string asteroidModelPath = "Models/asteroid/scene.gltf";
-
-	Model model(jupiterModelPath.c_str(), true);
-	Model Outline(jupiterModelPath.c_str(), true);
+	Model jupiterModel = Main::GenerateModel("Models/jupiter/scene.gltf", true);
+	Model asteroidModel = Main::GenerateModel("Models/asteroid/scene.gltf", true);
 
 //------------------ Main render loop --------------------------
 	while (!glfwWindowShouldClose(window)) {
+//-----------------FPS Debug and input rate control---------------
 		currTime = glfwGetTime();
 		timeDiff = currTime - prevTime;
 		counter++;
@@ -121,7 +119,7 @@ int main() {
 			counter = 0;
 			camera.Inputs(window);
 		}
-
+//-------------------------------------------------------------------
 		// Clear buffers
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -129,22 +127,8 @@ int main() {
 		// Update camera matrix
 		camera.updateMatrix(45.f, 0.1f, 100.f);
 
-		// Draw main model and mark stencil
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilMask(0xFF);
-		model.Draw(shaderProgram, camera);
-
-		// Draw outline where stencil is not equal to 1
-		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-		glStencilMask(0x00);
-		outliningProgram.Activate();
-		glCullFace(GL_FRONT); // Invert culling for outline
-		Outline.Draw(outliningProgram, camera);
-		glCullFace(GL_BACK);  // Restore culling
-
-		// Restore stencil state
-		glStencilMask(0xFF);
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		jupiterModel.Draw(shaderProgram, camera);
+		asteroidModel.Draw(shaderProgram, camera);
 
 		// Swap buffers and poll events
 		glfwSwapBuffers(window);
@@ -153,7 +137,6 @@ int main() {
 
 	// Cleanup
 	shaderProgram.Delete();
-	outliningProgram.Delete();
 	glfwDestroyWindow(window);
 	glfwTerminate();
 	return 0;
