@@ -1,4 +1,5 @@
 #include "Model.h"
+#include "Main.h"
 
 const unsigned int width = 1024;
 const unsigned int height = 1024;
@@ -63,10 +64,8 @@ int main() {
 	Camera camera(width, height, glm::vec3(0.f, 0.f, 2.f));
 
 	// Load models
-	std::string modelPath = "Models/crow/scene.gltf";
-	std::string outlinePath = "Models/crow-outline/scene.gltf";
-	Model model(modelPath.c_str(), true);
-	Model Outline(outlinePath.c_str(), true);
+	Model model = Main::GenerateModel("Models/crow/scene.gltf", true);
+	Model Outline = Main::GenerateModel("Models/crow-outline/scene.gltf", true);
 
 	// Main render loop
 	while (!glfwWindowShouldClose(window)) {
@@ -121,4 +120,11 @@ int main() {
 	glfwDestroyWindow(window);
 	glfwTerminate();
 	return 0;
+}
+
+Model Main::GenerateModel(std::string path, bool flipUVY)
+{
+	std::string modelPath = path;
+	Model model(modelPath.c_str(), flipUVY);
+	return model;
 }
