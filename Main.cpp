@@ -1,4 +1,5 @@
 #include "Model.h"
+#include "Main.h"
 
 const unsigned int width = 1024;
 const unsigned int height = 1024;
@@ -156,4 +157,11 @@ int main() {
 	glfwDestroyWindow(window);
 	glfwTerminate();
 	return 0;
+}
+
+Model Main::GenerateModel(std::string path, bool flipUVY)
+{
+	std::string modelPath = path;
+	Model model(modelPath.c_str(), flipUVY);
+	return model;
 }
