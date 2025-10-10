@@ -61,7 +61,7 @@ int main() {
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 	// Initialize camera
-	Camera camera(width, height, glm::vec3(0.f, 0.f, 2.f));
+	Camera camera(width, height, glm::vec3(-6.42748, 11.1339, 32.1955));
 
 	// Load models
 	Model model = Main::GenerateModel("Models/crow/scene.gltf", true);
