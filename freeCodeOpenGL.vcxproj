@@ -158,6 +158,7 @@
     <ClCompile Include="VBO.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="asteroid.vert" />
     <None Include="default.frag" />
     <None Include="default.vert" />
     <None Include="light.frag" />
@@ -184,6 +185,8 @@
     <None Include="Models\trees\scene.gltf" />
     <None Include="outlining.frag" />
     <None Include="outlining.vert" />
+    <None Include="skybox.frag" />
+    <None Include="skybox.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
@@ -210,6 +213,12 @@
     <Image Include="Models\ground\specular.png" />
     <Image Include="Models\Map\baseColor.png" />
     <Image Include="Models\scroll\textures\lambert4SG_baseColor.png" />
+    <Image Include="Models\skybox\back.png" />
+    <Image Include="Models\skybox\bottom.png" />
+    <Image Include="Models\skybox\front.png" />
+    <Image Include="Models\skybox\left.png" />
+    <Image Include="Models\skybox\right.png" />
+    <Image Include="Models\skybox\top.png" />
     <Image Include="Models\statue\170516_mia337_032122_600_200Kfaces_8192px_OBJ_baseColor.jpg" />
     <Image Include="Models\sword\textures\Object001_mtl_baseColor.jpeg" />
     <Image Include="Models\trees\diffuse.png" />

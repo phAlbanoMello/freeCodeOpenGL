@@ -23,7 +23,6 @@ uniform mat4 scale;
 void main()
 {
    //calculates current vertex position to world space (model matrix)
-
    crntPos = vec3(model * translation * rotation * scale * vec4(aPos, 1.f));
 
    // Pass the normal to the fragment shader (in object space)
@@ -34,5 +33,4 @@ void main()
 
    // Transform vertex position to clip space and set gl_Position
    gl_Position = camMatrix * vec4(crntPos, 1.0);
-   
 }

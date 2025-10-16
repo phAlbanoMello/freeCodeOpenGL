@@ -15,10 +15,20 @@ public:
 	std::vector <Vertex> vertices;
 	std::vector <GLuint> indices;
 	std::vector <Texture> textures;
+	std::vector <glm::mat4> instanceMatrix;
 
 	VAO VAO;
 
-	Mesh(std::vector <Vertex>& vertices, std::vector <GLuint>& indices, std::vector <Texture>& textures);
+	unsigned int instanceCount;
+
+	Mesh
+	(
+		std::vector <Vertex>& vertices, 
+		std::vector <GLuint>& indices, 
+		std::vector <Texture>& textures,
+		unsigned int instanceCount = 1,
+		std::vector <glm::mat4> instanceMatrix = {}
+	);
 
 	void Draw
 	(
@@ -29,5 +39,6 @@ public:
 		glm::quat rotation = glm::quat(1.f, 0.f, 0.f, 0.f),
 		glm::vec3 scale = glm::vec3(1.f, 1.f, 1.f)
 	);
+	void BindTextures(Shader& shader);
 };
 #endif

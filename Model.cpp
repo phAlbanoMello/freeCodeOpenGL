@@ -1,6 +1,6 @@
 #include "Model.h"
 
-Model::Model(const char* file, bool flipUV_Y)
+Model::Model(const char* file, unsigned int instanceCount, std::vector<glm::mat4> instanceMatrix, bool flipUV_Y)
 {
 	this->flipUV_Y = flipUV_Y;
 	//Abstract glTF file in a JSON structure
@@ -10,15 +10,68 @@ Model::Model(const char* file, bool flipUV_Y)
 	Model::file = file;
 	data = getData();
 	
+	Model::instanceCount = instanceCount;
+	Model::instanceMatrix = instanceMatrix;
+
 	traverseNode(0);
+	
+	//Setting up instancing with dynamic attributes
+	glGenBuffers(1, &instanceVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+	glBufferData(GL_ARRAY_BUFFER, instanceMatrix.size() * sizeof(glm::mat4), instanceMatrix.data(), GL_DYNAMIC_DRAW);
+
+	// Assign instanceVBO buffer to the instance attributes of each mesh
+	std::size_t vec4Size = sizeof(glm::vec4);
+	for (unsigned int i = 0; i < meshes.size(); ++i)
+	{
+		glBindVertexArray(meshes[i].VAO.ID);//Enable meshes VAO
+
+		for (unsigned int j = 0; j < 4; ++j) //iterates through each matrix column. Each will be a separate attribute on the shader.
+		{
+			//Enable each attribute (allows the shader to read them using locations)
+			glEnableVertexAttribArray(4 + j);
+			//Tells OpenGL how to read the attributes at the matrix (offset, stride, type, if it's normalized or not)
+			glVertexAttribPointer(4 + j, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(j * vec4Size));
+			//Tells OpenGL that this attribute changes for each INSTANCE, not each VERTEX. Without this, the same instanceMatrix would
+			//be applied for every asteroid.
+			glVertexAttribDivisor(4 + j, 1);
+		}
+
+		glBindVertexArray(0);
+	}
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
 }
 
-void Model::Draw(Shader& shader, Camera& camera)
+void Model::Draw(Shader& shader, Camera& camera, glm::vec3 translation, glm::quat rotation, glm::vec3 scale)
 {
-	for (unsigned int i = 0; i < meshes.size(); i++)
+	if (instanceCount == 1)
 	{
-		meshes[i].Mesh::Draw(shader, camera, matricesMeshes[i]);
+		glm::mat4 trans = glm::translate(glm::mat4(1.0f), translation);
+		glm::mat4 rot = glm::mat4_cast(rotation);
+		glm::mat4 sca = glm::scale(glm::mat4(1.0f), scale);
+		glm::mat4 transform = trans * rot * sca;
+
+		for (unsigned int i = 0; i < meshes.size(); i++)
+		{
+			glm::mat4 finalMatrix = transform * matricesMeshes[i];
+			meshes[i].Mesh::Draw(shader, camera, finalMatrix, translation, rotation, scale);
+		}
 	}
+	else
+	{
+		for (unsigned int i = 0; i < meshes.size(); i++)
+		{
+			meshes[i].Mesh::Draw(shader, camera);
+		}
+	}
+}
+
+void Model::UpdateInstanceBuffer(std::vector<glm::mat4>& updatedMatrices)
+{
+	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, updatedMatrices.size() * sizeof(glm::mat4), updatedMatrices.data());
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void Model::loadMesh(unsigned int indMesh)
@@ -40,7 +93,7 @@ void Model::loadMesh(unsigned int indMesh)
 	std::vector<GLuint> indices = getIndices(JSON["accessors"][indAccInd]);
 	std::vector<Texture> textures = getTextures();
 
-	meshes.push_back(Mesh(vertices, indices, textures));
+	meshes.push_back(Mesh(vertices, indices, textures, instanceCount, instanceMatrix));
 }
 
 void Model::traverseNode(unsigned int nextNode, glm::mat4 matrix)
@@ -262,54 +315,6 @@ std::vector<Vertex> Model::assembleVertices(std::vector<glm::vec3> positions, st
 	}
 	return vertices;
 }
-
-//std::vector<glm::vec2> Model::groupFloatsVec2(std::vector<float> floatVec)
-//{
-//	const unsigned int floatsPerVector = 2;
-//
-//	std::vector<glm::vec2> vectors;
-//	for (unsigned int i = 0; i < floatVec.size(); i += floatsPerVector)
-//	{
-//		vectors.push_back(glm::vec2(0, 0));
-//		for (unsigned int j = 0; j < floatsPerVector; j++)
-//		{
-//			vectors.back()[j] = floatVec[i + j];
-//		}
-//	}
-//	return vectors;
-//}
-//
-//std::vector<glm::vec3> Model::groupFloatsVec3(std::vector<float> floatVec)
-//{
-//	const unsigned int floatsPerVector = 3;
-//
-//	std::vector<glm::vec3> vectors;
-//	for (unsigned int i = 0; i < floatVec.size(); i += floatsPerVector)
-//	{
-//		vectors.push_back(glm::vec3(0, 0, 0));
-//		for (unsigned int j = 0; j < floatsPerVector; j++)
-//		{
-//			vectors.back()[j] = floatVec[i + j];
-//		}
-//	}
-//	return vectors;
-//}
-//
-//std::vector<glm::vec4> Model::groupFloatsVec4(std::vector<float> floatVec)
-//{
-//	const unsigned int floatsPerVector = 4;
-//
-//	std::vector<glm::vec4> vectors;
-//	for (unsigned int i = 0; i < floatVec.size(); i += floatsPerVector)
-//	{
-//		vectors.push_back(glm::vec4(0, 0, 0, 0));
-//		for (unsigned int j = 0; j < floatsPerVector; j++)
-//		{
-//			vectors.back()[j] = floatVec[i + j];
-//		}
-//	}
-//	return vectors;
-//}
 
 template<typename VecType, int N>
 std::vector<VecType> Model::groupFloatsVecN(const std::vector<float>& floatVec)

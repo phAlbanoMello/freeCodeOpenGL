@@ -86,14 +86,8 @@ void Camera::Inputs(GLFWwindow* window) {
         //this ensures that the axis is perpendicular to both the orientation and the up vecs, allowing for pitch and tilt rotations
         glm::vec3 newOrientation = glm::rotate(Orientation, glm::radians(-rotX), glm::normalize(glm::cross(Orientation, Up)));
 
-        //ensures the camera doesnt roll over itself, stopping the rotation if the rotation degrees try to go over 90
-        if (abs(glm::angle(newOrientation, Up) - glm::radians(90.0f)) <= glm::radians(85.f))
-        {
-            Orientation = newOrientation;
-        }
-
         //Updates current orientation around Up vector
-        Orientation = glm::rotate(Orientation, glm::radians(-rotY), Up);
+        Orientation = glm::rotate(newOrientation, glm::radians(-rotY), Up);
 
         glfwSetCursorPos(window, (width / 2), (height / 2));
     }

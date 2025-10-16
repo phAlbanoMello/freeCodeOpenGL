@@ -14,7 +14,7 @@
 class Camera {
 public:
 	glm::vec3 Position;
-	glm::vec3 Orientation = glm::vec3(-0.032368, -0.0255636, -0.999153);
+	glm::vec3 Orientation = glm::vec3(-12.032368, -0.0255636, -0.999153);
 	glm::vec3 Up = glm::vec3(0.f, 1.f, 0.f);
 	glm::mat4 cameraMatrix = glm::mat4(1.f);
 

@@ -109,7 +109,6 @@ float logisticDepth(float depth, float steepness, float offset)
 
 void main()
 {
-	
 	FragColor = directLight();
 }
 
