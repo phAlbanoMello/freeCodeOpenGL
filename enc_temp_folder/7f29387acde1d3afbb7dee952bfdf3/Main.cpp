@@ -6,7 +6,7 @@ const unsigned int height = 1024;
 
 bool debugFPS = false;
 
-const unsigned int MSAASamples = 4;
+const unsigned int MSAASamples = 1;
 
 // Variables for periodic FPS display
 double prevTime = 0.0f;
@@ -22,7 +22,7 @@ int main() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_SAMPLES, MSAASamples); //Hint GLFW that Multisampling will be used with the predefined amount of samples
+	glfwWindowHint(GLFW_SAMPLES, MSAASamples);
 
 	// Create window
 	GLFWwindow* window = glfwCreateWindow(width, height, "OpenGL study Main", NULL, NULL);
@@ -57,7 +57,7 @@ int main() {
 	// Enable depth testing, face culling, and stencil buffer
 	glEnable(GL_DEPTH_TEST);
 
-	glEnable(GL_MULTISAMPLE); //Enable multisampling
+	glEnable(GL_MULTISAMPLE);
 
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
@@ -115,26 +115,3 @@ Model Main::GenerateModel(std::string path, bool flipUVY)
 	Model model(modelPath.c_str(), flipUVY);
 	return model;
 }
-
-/* ------------- Notes about multisampling when using custom framebuffers in OpenGL ---------------------------//
-
-	When implementing Multisample Anti-Aliasing (MSAA) with custom framebuffers in OpenGL,
-	it's essential to understand that multisample framebuffers do not support direct post-processing. 
-
-	To work around this, a second standard framebuffer must be created to receive the 
-	resolved content from the multisample buffer using glBlitFramebuffer. 
-	This step is crucial for applying visual effects without losing the benefits of anti-aliasing. 
-
-	Additionally, using GL_TEXTURE_2D_MULTISAMPLE and glRenderbufferStorageMultisample ensures 
-	that each pixel is sampled multiple times, resulting in smoother and more realistic edges.
-
-	However, applying post-processing kernels can override the MSAA effect, potentially reintroducing aliasing.
-
-	It's advisable to be aware to avoid filters that negate the smoothing already applied. 
-	In terms of performance, using 2, 4, or 8 samples offers a good balance between visual quality and computational cost.
-
-	While some GPUs support up to 16 or 32 samples, the visual improvement often doesn't justify the performance hit. 
-
-	To check your GPU’s maximum supported samples use glGetIntegerv(GL_MAX_SAMPLES, &maxSamples).
-
-*///-----------------------------------------------------------------------------------------------------------//
