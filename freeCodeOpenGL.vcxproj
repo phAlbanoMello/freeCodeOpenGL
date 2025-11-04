@@ -176,6 +176,8 @@
     <None Include="Models\Map\scene.gltf" />
     <None Include="Models\scroll\scene.bin" />
     <None Include="Models\scroll\scene.gltf" />
+    <None Include="Models\sphere\scene.bin" />
+    <None Include="Models\sphere\scene.gltf" />
     <None Include="Models\statue\scene.bin" />
     <None Include="Models\statue\scene.gltf" />
     <None Include="Models\sword\scene.bin" />

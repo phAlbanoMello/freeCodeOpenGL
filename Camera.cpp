@@ -104,7 +104,7 @@ void Camera::Inputs(GLFWwindow* window) {
         firstClick = true;
     }
 
-    LogCameraIfChanged();
+    //LogCameraIfChanged();
 }
 
 void Camera::LogCameraIfChanged() {

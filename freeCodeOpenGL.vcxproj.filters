@@ -140,6 +140,12 @@
     <None Include="Models\statue\scene.gltf">
       <Filter>Resource Files\Models</Filter>
     </None>
+    <None Include="Models\sphere\scene.bin">
+      <Filter>Resource Files\Models</Filter>
+    </None>
+    <None Include="Models\sphere\scene.gltf">
+      <Filter>Resource Files\Models</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h">

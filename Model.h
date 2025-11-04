@@ -13,6 +13,8 @@ public:
 	Model(const char* file, bool flipUV_Y = false);
 	void Draw(Shader& shader, Camera& camera);
 
+	static glm::mat4 ComposeModelMatrix(glm::vec3 translation, glm::quat rotation, glm::vec3 scale);
+
 private:
 	bool flipUV_Y;
 	const char* file;

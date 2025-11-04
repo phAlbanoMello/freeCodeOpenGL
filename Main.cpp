@@ -41,31 +41,44 @@ int main() {
 
 	// Load shaders
 	Shader shaderProgram("default.vert", "default.frag");
-	Shader outliningProgram("outlining.vert", "outlining.frag");
-
+	Shader lightProgram("light.vert", "light.frag");
+	
+	//model matrix
+	glm::vec3 modelPos = glm::vec3(50.f, 0.5f, 0.5f);
+	glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), modelPos);
 	// Set up lighting
-	glm::vec4 lightColor = glm::vec4(1.0f);
-	glm::vec3 lightPos = glm::vec3(0.5f);
-	glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), lightPos);
+	glm::vec3 lightScaleFactors(0.03f);
+	glm::vec4 lightColor = glm::vec4(1.0f, 1.f, 1.f, 1.f);
+	glm::vec3 lightPos = glm::vec3(0.f, 0.5f, 0.5f);
+
+	/*glm::mat4 lightMatrix = glm::mat4(1.0f);
+	lightMatrix = glm::translate(lightMatrix, lightPos);
+	lightMatrix = glm::scale(lightMatrix, lightScaleFactors);*/
 
 	shaderProgram.Activate();
 	glUniform4f(glGetUniformLocation(shaderProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 	glUniform3f(glGetUniformLocation(shaderProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
+	glUniformMatrix4fv(glGetUniformLocation(shaderProgram.ID, "model"), 1,GL_FALSE, glm::value_ptr(modelMatrix));
+
+	GLint loc = glGetUniformLocation(shaderProgram.ID, "model");
+	std::cout << "model location: " << loc << std::endl;
+
+	/*lightProgram.Activate();
+	glUniform4f(glGetUniformLocation(lightProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
+	glUniformMatrix4fv(glGetUniformLocation(lightProgram.ID, "model"), 1, GL_FALSE, glm::value_ptr(lightMatrix));*/
 
 	// Enable depth testing, face culling, and stencil buffer
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
-	glEnable(GL_STENCIL_TEST);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 	// Initialize camera
-	Camera camera(width, height, glm::vec3(-6.42748, 11.1339, 32.1955));
+	Camera camera(width, height, glm::vec3(-0.577051, 0.0557556, 1.35582));
 
 	// Load models
-	Model model = Main::GenerateModel("Models/crow/scene.gltf", true);
-	Model Outline = Main::GenerateModel("Models/crow-outline/scene.gltf", true);
+	Model model = Main::GenerateModel("Models/statue/scene.gltf", true);
+	//Model light = Main::GenerateModel("Models/sphere/scene.gltf", true);
 
 	// Main render loop
 	while (!glfwWindowShouldClose(window)) {
@@ -92,23 +105,9 @@ int main() {
 		// Update camera matrix
 		camera.updateMatrix(45.f, 0.1f, 100.f);
 
-		// Draw main model and mark stencil
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilMask(0xFF);
 		model.Draw(shaderProgram, camera);
-
-		// Draw outline where stencil is not equal to 1
-		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-		glStencilMask(0x00);
-		outliningProgram.Activate();
-		glCullFace(GL_FRONT); // Invert culling for outline
-		Outline.Draw(outliningProgram, camera);
-		glCullFace(GL_BACK);  // Restore culling
-
-		// Restore stencil state
-		glStencilMask(0xFF);
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-
+		//light.Draw(lightProgram, camera);
+	
 		// Swap buffers and poll events
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -116,7 +115,7 @@ int main() {
 
 	// Cleanup
 	shaderProgram.Delete();
-	outliningProgram.Delete();
+	//lightProgram.Delete();
 	glfwDestroyWindow(window);
 	glfwTerminate();
 	return 0;
