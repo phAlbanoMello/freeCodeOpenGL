@@ -24,7 +24,7 @@ uniform vec3 lightPos;
 uniform vec3 camPos;
 
 // Ambient light intensity
-const float ambient = 0.5;
+const float ambient = 0.2;
 
 vec4 pointLight()
 {

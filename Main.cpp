@@ -40,33 +40,9 @@ int main() {
 	glViewport(0, 0, width, height);
 
 	// Load shaders
-	Shader shaderProgram("default.vert", "default.frag");
-	Shader lightProgram("light.vert", "light.frag");
+	Shader mainShader("default.vert", "default.frag");
+	Shader lightShader("light.vert", "light.frag");
 	
-	//model matrix
-	glm::vec3 modelPos = glm::vec3(50.f, 0.5f, 0.5f);
-	glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), modelPos);
-	// Set up lighting
-	glm::vec3 lightScaleFactors(0.03f);
-	glm::vec4 lightColor = glm::vec4(1.0f, 1.f, 1.f, 1.f);
-	glm::vec3 lightPos = glm::vec3(0.f, 0.5f, 0.5f);
-
-	/*glm::mat4 lightMatrix = glm::mat4(1.0f);
-	lightMatrix = glm::translate(lightMatrix, lightPos);
-	lightMatrix = glm::scale(lightMatrix, lightScaleFactors);*/
-
-	shaderProgram.Activate();
-	glUniform4f(glGetUniformLocation(shaderProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
-	glUniform3f(glGetUniformLocation(shaderProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
-	glUniformMatrix4fv(glGetUniformLocation(shaderProgram.ID, "model"), 1,GL_FALSE, glm::value_ptr(modelMatrix));
-
-	GLint loc = glGetUniformLocation(shaderProgram.ID, "model");
-	std::cout << "model location: " << loc << std::endl;
-
-	/*lightProgram.Activate();
-	glUniform4f(glGetUniformLocation(lightProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
-	glUniformMatrix4fv(glGetUniformLocation(lightProgram.ID, "model"), 1, GL_FALSE, glm::value_ptr(lightMatrix));*/
-
 	// Enable depth testing, face culling, and stencil buffer
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
@@ -77,8 +53,8 @@ int main() {
 	Camera camera(width, height, glm::vec3(-0.577051, 0.0557556, 1.35582));
 
 	// Load models
-	Model model = Main::GenerateModel("Models/statue/scene.gltf", true);
-	//Model light = Main::GenerateModel("Models/sphere/scene.gltf", true);
+	Model statueModel = Main::GenerateModel("Models/statue/scene.gltf", true);
+	Model lightModel = Main::GenerateModel("Models/sphere/scene.gltf", true);
 
 	// Main render loop
 	while (!glfwWindowShouldClose(window)) {
@@ -105,8 +81,25 @@ int main() {
 		// Update camera matrix
 		camera.updateMatrix(45.f, 0.1f, 100.f);
 
-		model.Draw(shaderProgram, camera);
-		//light.Draw(lightProgram, camera);
+		//------------- Setting up uniforms ---------------------
+		glm::vec3 modelPos = glm::vec3(0.f);
+		glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), modelPos);
+		
+		glm::vec3 lightPos = glm::vec3(0.1f, .3f, -0.5f);
+		glm::vec3 lightScaleFactors(0.07f);
+		glm::mat4 lightMatrix = glm::translate(glm::mat4(1.0f), lightPos);
+		lightMatrix = glm::scale(lightMatrix, lightScaleFactors);
+
+		glm::vec4 lightColor = glm::vec4(1.f, 1.f, 1.f, 1.f);
+		
+		mainShader.Activate();
+		glUniform4f(glGetUniformLocation(mainShader.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
+		glUniform3f(glGetUniformLocation(mainShader.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
+		lightShader.Activate();
+		glUniform4f(glGetUniformLocation(lightShader.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
+		//-------------------------------------------------------
+		statueModel.Draw(mainShader, camera, modelMatrix);
+		lightModel.Draw(lightShader, camera, lightMatrix);
 	
 		// Swap buffers and poll events
 		glfwSwapBuffers(window);
@@ -114,8 +107,8 @@ int main() {
 	}
 
 	// Cleanup
-	shaderProgram.Delete();
-	//lightProgram.Delete();
+	mainShader.Delete();
+	lightShader.Delete();
 	glfwDestroyWindow(window);
 	glfwTerminate();
 	return 0;
@@ -123,7 +116,6 @@ int main() {
 
 Model Main::GenerateModel(std::string path, bool flipUVY)
 {
-	std::string modelPath = path;
-	Model model(modelPath.c_str(), flipUVY);
+	Model model(path.c_str(), flipUVY);
 	return model;
 }
