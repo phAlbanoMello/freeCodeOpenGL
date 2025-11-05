@@ -24,7 +24,7 @@ uniform vec3 lightPos;
 uniform vec3 camPos;
 
 // Ambient light intensity
-const float ambient = 0.2;
+const float ambient = 0.12;
 
 vec4 pointLight()
 {
@@ -38,12 +38,16 @@ vec4 pointLight()
 	vec3 normal = normalize(Normal);
 	vec3 lightDirection = normalize(lightVec);
 	float diffuse = max(dot(normal, lightDirection), 0.f) * 0.9f; //Trying to soften diffuse
-	
-	float specularLight = 0.2f;
-	vec3 viewDirection = normalize(camPos - crntPos);
-	vec3 reflectionDirection = reflect(-lightDirection, normal);
-	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.f), 32);
-	float specular = specAmount * specularLight;
+	float specular = 0.25f;
+	//Blinn-Phong lighting
+	if(diffuse != 0.f){
+		float specularLight = 0.2f;
+		vec3 viewDirection = normalize(camPos - crntPos);
+		vec3 reflectionDirection = reflect(-lightDirection, normal);
+		vec3 halfWayVec = normalize(viewDirection + lightDirection);
+		float specAmount = pow(max(dot(normal, halfWayVec), 0.f), 32);
+		specular = specAmount * specularLight;
+	}
 
     // Final color composition
     vec4 diff = texture(diffuse0, texCoord);
@@ -109,8 +113,7 @@ float logisticDepth(float depth, float steepness, float offset)
 
 void main()
 {
-	
-	FragColor = directLight();
+	FragColor = pointLight();
 }
 
 /* Notes on Diffuse lighting!
