@@ -16,9 +16,12 @@ public:
 	std::vector <GLuint> indices;
 	std::vector <Texture> textures;
 
+	glm::vec3 localMinBounds;
+	glm::vec3 localMaxBounds;
+
 	VAO VAO;
 
-	Mesh(std::vector <Vertex>& vertices, std::vector <GLuint>& indices, std::vector <Texture>& textures);
+	Mesh(std::vector <Vertex>& vertices, std::vector <GLuint>& indices, std::vector <Texture>& textures, glm::vec3 localMin, glm::vec3 localMax);
 
 	void Draw
 	(

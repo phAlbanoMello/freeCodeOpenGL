@@ -10,6 +10,10 @@ using json = nlohmann::json;
 class Model
 {
 public:
+
+	glm::vec3 boundsMin;
+	glm::vec3 boundsMax;
+
 	Model(const char* file, bool flipUV_Y = false);
 	void Draw(Shader& shader, Camera& camera, glm::mat4 modelUniformMatrix);
 

@@ -119,7 +119,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)\Libraries\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\Backend;$(SolutionDir)\ImGUI;$(SolutionDir)\Libraries\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -145,9 +145,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Backend\imgui_impl_glfw.cpp" />
+    <ClCompile Include="Backend\imgui_impl_opengl3.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="EBO.cpp" />
     <ClCompile Include="glad.c" />
+    <ClCompile Include="ImGUI\imgui.cpp" />
+    <ClCompile Include="ImGUI\imgui_demo.cpp" />
+    <ClCompile Include="ImGUI\imgui_draw.cpp" />
+    <ClCompile Include="ImGUI\imgui_tables.cpp" />
+    <ClCompile Include="ImGUI\imgui_widgets.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Model.cpp" />
@@ -160,6 +167,8 @@
   <ItemGroup>
     <None Include="default.frag" />
     <None Include="default.vert" />
+    <None Include="framebuffer.frag" />
+    <None Include="framebuffer.vert" />
     <None Include="light.frag" />
     <None Include="light.vert" />
     <None Include="Models\bunny\scene.bin" />
@@ -186,10 +195,21 @@
     <None Include="Models\trees\scene.gltf" />
     <None Include="outlining.frag" />
     <None Include="outlining.vert" />
+    <None Include="shadowMap.frag" />
+    <None Include="shadowMap.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Backend\imgui_impl_glfw.h" />
+    <ClInclude Include="Backend\imgui_impl_opengl3.h" />
+    <ClInclude Include="Backend\imgui_impl_opengl3_loader.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="EBO.h" />
+    <ClInclude Include="ImGUI\imconfig.h" />
+    <ClInclude Include="ImGUI\imgui.h" />
+    <ClInclude Include="ImGUI\imgui_internal.h" />
+    <ClInclude Include="ImGUI\imstb_rectpack.h" />
+    <ClInclude Include="ImGUI\imstb_textedit.h" />
+    <ClInclude Include="ImGUI\imstb_truetype.h" />
     <ClInclude Include="Main.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Model.h" />
@@ -209,7 +229,6 @@
     <Image Include="Models\grindstone\textures\Main_metallicRoughness.png" />
     <Image Include="Models\grindstone\textures\Main_normal.png" />
     <Image Include="Models\ground\diffuse.png" />
-    <Image Include="Models\ground\specular.png" />
     <Image Include="Models\Map\baseColor.png" />
     <Image Include="Models\scroll\textures\lambert4SG_baseColor.png" />
     <Image Include="Models\statue\170516_mia337_032122_600_200Kfaces_8192px_OBJ_baseColor.jpg" />

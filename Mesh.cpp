@@ -1,10 +1,13 @@
 #include "Mesh.h"
 
-Mesh::Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::vector<Texture>& textures)
+Mesh::Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::vector<Texture>& textures, glm::vec3 localMin, glm::vec3 localMax)
 {
 	Mesh::vertices = vertices;
 	Mesh::indices = indices;
 	Mesh::textures = textures;
+
+	localMinBounds = localMin;
+	localMaxBounds = localMax;
 
 	VAO.Bind();
 	VBO VBO(vertices);

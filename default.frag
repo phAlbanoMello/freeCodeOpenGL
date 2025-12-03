@@ -11,10 +11,13 @@ in vec3 Normal;
 in vec3 color;
 //Imports the texture coordinates from the Vertex Shader
 in vec2 texCoord;
+// Imports the fragment position of the light
+in vec4 fragPosLight;
 
 // Texture samplers
 uniform sampler2D diffuse0;
 uniform sampler2D specular0;
+uniform sampler2D shadowMap;
 
 // Lighting and camera uniforms
 uniform vec4 lightColor;
@@ -25,6 +28,73 @@ uniform vec3 camPos;
 
 // Ambient light intensity
 const float ambient = 0.12;
+
+float pcfShadows(vec4 fragPosLightSpace){
+	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w; 
+	projCoords = projCoords * 0.5 + 0.5;
+
+	if (projCoords.z > 1.0)return 0.0;
+
+    float bias = max(0.003 * (1.0 - dot(normalize(Normal), normalize(lightPos - crntPos))), 0.001);
+
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
+            shadow += projCoords.z - bias > pcfDepth ? 1.0 : 0.0;
+        }
+    }
+
+    shadow /= 9.0;
+
+	return shadow;
+}
+
+float basicShadow(vec4 fragPosLightSpace)
+{
+	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w; // returns the fragment's light-space position in the range [-1,1]
+	projCoords = projCoords * 0.5 + 0.5;
+
+	float closestDepth = texture(shadowMap, projCoords.xy).r;
+	float currentDepth = projCoords.z;
+	float bias = max(0.005 * (1.0 - dot(normalize(Normal), normalize(lightPos - crntPos))), 0.001);
+	float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+
+	return shadow;
+}
+
+
+vec4 directLight(){
+
+	vec3 color = texture(diffuse0, texCoord).rgb;
+	vec3 normal = normalize(Normal);
+	vec3 lightColor = vec3(1.0);
+	vec3 ambient = ambient * lightColor;
+	vec3 lightDir = normalize(lightPos - crntPos);
+	float diff = max(dot(lightDir, normal), .0);
+	vec3 diffuse = diff * lightColor;
+	vec3 viewDir = normalize(camPos - crntPos);
+	float spec = 0.0;
+
+	vec3 halfwayDir = normalize(lightDir + viewDir);
+
+	vec3 specular = spec * lightColor;
+
+	float shadow = pcfShadows(fragPosLight);
+
+	vec3 lighting = (ambient + (1.0 - shadow) * (diffuse + specular)) * color;
+
+	float debugNormalsPB = dot(lightDir, normal);
+	vec4 debugNormalsHue = vec4(normal * 0.5 + 0.5, 1.0);
+	vec4 debugShadow= vec4(vec3(1.0 - shadow), 1.0);
+
+
+	return vec4(lighting, 1.0);
+}
 
 vec4 pointLight()
 {
@@ -55,23 +125,6 @@ vec4 pointLight()
     return (diff * (diffuse * intensity + ambient) + specVal * specular * intensity) * lightColor;
 }
 
-vec4 directLight(){
-
-	vec3 normal = normalize(Normal);
-	vec3 lightDirection = normalize(vec3(1.f, 1.f, 0.f));
-	float diffuse = max(dot(normal, lightDirection), 0.f) * 0.9f;
-	
-	float specularLight = 0.2f;
-	vec3 viewDirection = normalize(camPos - crntPos);
-	vec3 reflectionDirection = reflect(-lightDirection, normal);
-	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.f), 32);
-	float specular = specAmount * specularLight;
-
-    vec4 diff = texture(diffuse0, texCoord);
-    float specVal = texture(specular0, texCoord).r;
-    return (diff * (diffuse + ambient) + specVal * specular) * lightColor;
-}
-
 vec4 spotLight()
 {
     float outerCone = 0.8;  // Light fades out beyond this angle (cosine)
@@ -96,24 +149,9 @@ vec4 spotLight()
     return (diff * (diffuse * intensity + ambient) + specVal * specular * intensity) * lightColor;
 }
 
-//Depth functions
-float near = 0.1;
-float far = 100.0;
-
-float linearizeDepth(float depth)
-{
-    return (2.0 * near * far) / (far + near - (depth * 2.0 - 1.0) * (far - near));
-}
-
-float logisticDepth(float depth, float steepness, float offset)
-{
-    float zVal = linearizeDepth(depth);
-    return 1.0 / (1.0 + exp(-steepness * (zVal - offset)));
-}
-
 void main()
 {
-	FragColor = pointLight();
+	FragColor =  directLight(); //directLight();
 }
 
 /* Notes on Diffuse lighting!

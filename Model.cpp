@@ -11,6 +11,15 @@ Model::Model(const char* file, bool flipUV_Y)
 	data = getData();
 	
 	traverseNode(0);
+
+	boundsMin = glm::vec3(FLT_MAX);
+	boundsMax = glm::vec3(-FLT_MAX);
+
+	for(Mesh& mesh : meshes)
+	{
+		boundsMin = glm::min(boundsMin, mesh.localMinBounds);
+		boundsMax = glm::max(boundsMax, mesh.localMaxBounds);
+	}
 }
 
 void Model::Draw(Shader& shader, Camera& camera, glm::mat4 modelUniformMatrix)
@@ -40,7 +49,15 @@ void Model::loadMesh(unsigned int indMesh)
 	std::vector<GLuint> indices = getIndices(JSON["accessors"][indAccInd]);
 	std::vector<Texture> textures = getTextures();
 
-	meshes.push_back(Mesh(vertices, indices, textures));
+	glm::vec3 minBounds(FLT_MAX);
+	glm::vec3 maxBounds(-FLT_MAX);
+
+	for (glm::vec3& p : positions) {
+		minBounds = glm::min(minBounds, p);
+		maxBounds = glm::max(maxBounds, p);
+	}
+
+	meshes.push_back(Mesh(vertices, indices, textures, minBounds, maxBounds));
 }
 
 void Model::traverseNode(unsigned int nextNode, glm::mat4 matrix)

@@ -25,6 +25,12 @@
       <UniqueIdentifier>{e791bd42-29e7-4c26-9f49-1a673d54ae2d}</UniqueIdentifier>
       <Extensions>gltf;bin</Extensions>
     </Filter>
+    <Filter Include="ImGui">
+      <UniqueIdentifier>{2feeb212-5aad-44fa-9daf-39b74fc18d81}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Backend">
+      <UniqueIdentifier>{1cc05756-6d01-447b-b68c-05b8d72b6c7a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glad.c">
@@ -59,6 +65,27 @@
     </ClCompile>
     <ClCompile Include="Model.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Backend\imgui_impl_opengl3.cpp">
+      <Filter>Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGUI\imgui.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGUI\imgui_demo.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGUI\imgui_draw.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGUI\imgui_tables.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGUI\imgui_widgets.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Backend\imgui_impl_glfw.cpp">
+      <Filter>Backend</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -146,6 +173,18 @@
     <None Include="Models\sphere\scene.gltf">
       <Filter>Resource Files\Models</Filter>
     </None>
+    <None Include="shadowMap.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="shadowMap.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="framebuffer.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="framebuffer.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h">
@@ -174,6 +213,33 @@
     </ClInclude>
     <ClInclude Include="Main.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Backend\imgui_impl_opengl3_loader.h">
+      <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="Backend\imgui_impl_opengl3.h">
+      <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGUI\imstb_truetype.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGUI\imconfig.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGUI\imgui.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGUI\imgui_internal.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGUI\imstb_rectpack.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGUI\imstb_textedit.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Backend\imgui_impl_glfw.h">
+      <Filter>Backend</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -214,9 +280,6 @@
       <Filter>Resource Files\Textures</Filter>
     </Image>
     <Image Include="Models\ground\diffuse.png">
-      <Filter>Resource Files\Textures</Filter>
-    </Image>
-    <Image Include="Models\ground\specular.png">
       <Filter>Resource Files\Textures</Filter>
     </Image>
     <Image Include="Models\trees\diffuse.png">
