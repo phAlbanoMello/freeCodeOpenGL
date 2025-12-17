@@ -2,40 +2,31 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-
-struct CameraData {
-	glm::vec3 position;
-	glm::vec3 orientation;
-};
-struct Object {
-	std::string name;
-
-	// Transform parameters
-	glm::vec3 position{ 0.0f };
-	glm::vec3 rotation{ 0.0f }; // em graus (Euler)
-	glm::vec3 scale{ 1.0f };
-
-	// Derived data
-	glm::mat4 matrix{ 1.0f };
-	glm::vec3 minBounds;
-	glm::vec3 maxBounds;
-};
+#include "Object.h"
 
 class Main {
 public:
-	static Model GenerateModel(std::string path, bool flipUVY);
-	static void DrawSceneWithShader(Shader shader, Camera camera, bool debugBounds);
-	static void AddObjectToPickablesCollection(const std::shared_ptr<Model>& model, const glm::mat4& modelMatrix, const std::string& name);
-	static Object MakeObjectFromModelMatrix(const std::shared_ptr<Model>& model,
-		const glm::mat4& modelMatrix,
-		const std::string& name);
-	static void DebugModelCenterScreenSpace(Camera camera, glm::mat4 modelMatrix, int width, int height, ImU32 color);
-	static void DebugModelBoundsScreenSpace(Camera camera, glm::mat4 modelMatrix, const glm::vec3& boundsMin, const glm::vec3& boundsMax);
-	static void DrawLight(Shader shader, Camera camera, glm::vec4 color, glm::vec3 position, bool debugBounds);
-	static void SaveCameraState(Camera& cam);
-	static CameraData LoadCameraState();
-	//static bool RayIntersectsSphere(const glm::vec3& rayOrigin, const glm::vec3& rayDir, const Object& obj, float& tHit);
+	//Rendering
+	static void DrawSceneWithShader(std::shared_ptr<Shader>& shader, Camera camera, bool debugBounds);
+	static glm::mat4 GenerateLightSpaceMatrix(glm::vec3 currentLightPosition, float nearPlane, float farPlane);
+	static void SetupMainShaderUniforms(std::shared_ptr<Shader>& shader, glm::vec3& currentLightPos, glm::mat4& lightSpaceMatrix);
+	static void DrawLight(std::shared_ptr<Shader> shader, Camera camera, glm::vec4 color, glm::vec3 position, bool debugBounds);
+	
+	//Picking
+	static Object* GetSelectedObject(const Camera& camera, GLFWwindow* window);
 	static bool RayIntersectsAABB(const glm::vec3& rayOrigin, const glm::vec3& rayDir, const Object& obj, float& tHit);
+	
+	//Debug
+	static void DebugModelCenterScreenSpace(Camera camera, glm::mat4 modelMatrix, ImU32 color);
+	static void DebugModelBoundsScreenSpace(Camera camera, glm::mat4 modelMatrix, const glm::vec3& boundsMin, const glm::vec3& boundsMax);
 };
 
+//ImGUI
 void DrawObjectEditor();
+void DrawText(const char* text, float xOffset, float yOffset);
+void HandleObjectSelection(GLFWwindow* window, ImGuiIO& io, const Camera& camera);
+void UpdateUI();
+void UpdateSelectedObjectPosition();
+
+//Shadow Renderer
+void ShadowMapRenderPass(glm::mat4& lightSpaceMatrix, const unsigned int SHADOW_WIDTH, const unsigned int SHADOW_HEIGHT, unsigned int depthMapFBO);

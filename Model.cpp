@@ -1,9 +1,12 @@
 #include "Model.h"
 
-Model::Model(const char* file, bool flipUV_Y)
+//Class Responsibility :
+//Load the data from the glTF file as json and create the Meshes
+
+Model::Model(const char* file, bool flipUV_Y, const char* name)
 {
 	this->flipUV_Y = flipUV_Y;
-	//Abstract glTF file in a JSON structure
+
 	std::string text = get_file_contents(file);
 	JSON = json::parse(text);
 
@@ -12,18 +15,21 @@ Model::Model(const char* file, bool flipUV_Y)
 	
 	traverseNode(0);
 
-	boundsMin = glm::vec3(FLT_MAX);
-	boundsMax = glm::vec3(-FLT_MAX);
+	localInitialBoundsMin = glm::vec3(FLT_MAX);
+	localInitialBoundsMax = glm::vec3(-FLT_MAX);
+
+	Model::name = name;
 
 	for(Mesh& mesh : meshes)
 	{
-		boundsMin = glm::min(boundsMin, mesh.localMinBounds);
-		boundsMax = glm::max(boundsMax, mesh.localMaxBounds);
+		localInitialBoundsMin = glm::min(localInitialBoundsMin, mesh.localMinBounds);
+		localInitialBoundsMax = glm::max(localInitialBoundsMax, mesh.localMaxBounds);
 	}
 }
 
 void Model::Draw(Shader& shader, Camera& camera, glm::mat4 modelUniformMatrix)
 {
+	modelMatrix = modelUniformMatrix;
 	for (unsigned int i = 0; i < meshes.size(); i++)
 	{
 		meshes[i].Mesh::Draw(shader, camera, matricesMeshes[i], modelUniformMatrix);

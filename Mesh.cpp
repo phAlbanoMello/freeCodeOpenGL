@@ -1,5 +1,9 @@
 #include "Mesh.h"
 
+//Class Responsibility :
+//Represent a Mesh object created with data processed by the model from glTF files
+//Wraps logic for drawing each mesh, binding the VAO and textures
+
 Mesh::Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::vector<Texture>& textures, glm::vec3 localMin, glm::vec3 localMax)
 {
 	Mesh::vertices = vertices;
@@ -23,37 +27,39 @@ Mesh::Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::vec
 	EBO.Unbind();
 }
 
-void Mesh::Draw(Shader& shader,Camera& camera,glm::mat4 matrix, glm::mat4 modelMatrix)
+void Mesh::Draw(Shader& shader,Camera& camera,const glm::mat4& meshLocalMatrix, const glm::mat4& modelWorldMatrix)
 {
-	shader.Activate();
-	VAO.Bind();
+    shader.Activate();
+    VAO.Bind();
 
-	unsigned int numDiffuse = 0;
-	unsigned int numSpecular = 0;
+    unsigned int diffuseCount = 0;
+    unsigned int specularCount = 0;
 
-	for (unsigned int i = 0; i < textures.size(); i++)
-	{
-		std::string num;
-		std::string type = textures[i].type;
-		if (type == "diffuse")
-		{
-			num = std::to_string(numDiffuse++);
-		}
-		else if (type == "specular")
-		{
-			num = std::to_string(numSpecular++);
-		}
+    for (unsigned int i = 0; i < textures.size(); ++i)
+    {
+        std::string uniformName;
+        const std::string& type = textures[i].type;
 
-		textures[i].texUnit(shader, (type + num).c_str(), i);
-		textures[i].Bind();
-	}
+        if (type == "diffuse")
+        {
+            uniformName = type + std::to_string(diffuseCount++);
+        }
+        else if (type == "specular")
+        {
+            uniformName = type + std::to_string(specularCount++);
+        }
 
-	glUniform3f(glGetUniformLocation(shader.ID, "camPos"), camera.Position.x, camera.Position.y, camera.Position.z);
-	camera.Matrix(shader, "camMatrix");
+        textures[i].texUnit(shader, uniformName.c_str(), i);
+        textures[i].Bind();
+    }
 
-	glm::mat4 finalMatrix = matrix * modelMatrix;
+    glUniform3f(glGetUniformLocation(shader.ID, "camPos"),camera.Position.x,camera.Position.y,camera.Position.z);
 
-	glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(finalMatrix));
+    camera.Matrix(shader, "camMatrix");
 
-	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+    glm::mat4 finalModelMatrix = meshLocalMatrix * modelWorldMatrix;
+
+    glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"),1, GL_FALSE,glm::value_ptr(finalModelMatrix));
+
+    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
 }

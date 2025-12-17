@@ -1,5 +1,8 @@
 #include "Texture.h"
 
+//Class Responsibility :
+//Represents a loaded texture created by the Model class when loading textures from glTF files
+
 Texture::Texture(const char* image, const char* texType, GLuint slot)
 {
 	//Assign the type if the texture to the texture object

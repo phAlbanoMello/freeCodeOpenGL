@@ -1,5 +1,9 @@
 #include "VAO.h"
 
+//Class Responsibility :
+//Represents a Vertex Array Object
+//Wraps VBO linking and basic VAO setup functions
+
 VAO::VAO()
 {
 	glGenVertexArrays(1, &ID);

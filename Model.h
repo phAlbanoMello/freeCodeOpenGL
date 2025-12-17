@@ -10,11 +10,12 @@ using json = nlohmann::json;
 class Model
 {
 public:
+	const char* name;
+	glm::vec3 localInitialBoundsMin;
+	glm::vec3 localInitialBoundsMax;
+	glm::mat4 modelMatrix;
 
-	glm::vec3 boundsMin;
-	glm::vec3 boundsMax;
-
-	Model(const char* file, bool flipUV_Y = false);
+	Model(const char* file, bool flipUV_Y = false, const char* name = "");
 	void Draw(Shader& shader, Camera& camera, glm::mat4 modelUniformMatrix);
 
 private:

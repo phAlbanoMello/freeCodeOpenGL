@@ -1,6 +1,7 @@
 #include "EBO.h"
 
-//Constructor generates a Element Buffer Object and links 
+//Class Responsibility :
+//Wraps Element Buffer Object creation and binding
 
 EBO::EBO(std::vector<GLuint>& indices)
 {

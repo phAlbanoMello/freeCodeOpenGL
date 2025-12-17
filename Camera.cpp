@@ -1,6 +1,9 @@
 #include "Camera.h"
 #include <glm/gtc/epsilon.hpp>
 
+//Class Responsibility :
+//Process perspective transformations and process movement related inputs
+
 Camera::Camera(int width, int height, glm::vec3 position, glm::vec3 orientation) {
 	Camera::width = width;
 	Camera::height = height;
@@ -27,7 +30,6 @@ void Camera::updateMatrix(float FOVdeg, float nearPlane, float farPlane)
 
 void Camera::Matrix(Shader& shader, const char* uniform)
 {
-    //Exports Camera Matrix
     glUniformMatrix4fv(glGetUniformLocation(shader.ID, uniform), 1, GL_FALSE, glm::value_ptr(cameraMatrix));
 }
 
@@ -141,4 +143,42 @@ glm::mat4 Camera::GetViewMatrix() const {
 
 glm::mat4 Camera::GetProjectionMatrix() const {
     return projectionMatrix;
+}
+
+void Camera::SaveCameraState() {
+    std::cout << "Saving Camera State" << std::endl;
+    LogState();
+
+    nlohmann::json cameraStateData;
+    cameraStateData["position"] = { Position.x, Position.y, Position.z };
+    cameraStateData["orientation"] = { Orientation.x, Orientation.y, Orientation.z };
+
+    std::ofstream file("camera_state.json");
+    if (file.is_open()) {
+        file << cameraStateData.dump(4);
+        file.close();
+    }
+}
+
+CameraData Camera::LoadCameraState() {
+    CameraData cam;
+    std::ifstream file("camera_state.json");
+    if (file.is_open()) {
+        nlohmann::json j;
+        file >> j;
+
+        auto pos = j["position"];
+        auto ori = j["orientation"];
+
+        cam.position = glm::vec3(pos[0], pos[1], pos[2]);
+        cam.orientation = glm::vec3(ori[0], ori[1], ori[2]);
+
+        file.close();
+    }
+    else {
+        cam.position = glm::vec3(-5.0f, 10.0f, 0.0f);
+        cam.orientation = glm::vec3(0.66125, -0.710963, 0.239399);
+    }
+
+    return cam;
 }

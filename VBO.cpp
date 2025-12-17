@@ -1,5 +1,9 @@
 #include "VBO.h"
 
+//Class Responsibility :
+//Represents a Vertex Buffer Object
+//Wraps VBO creation and setup functions.
+
 VBO::VBO(std::vector<Vertex>& vertices)
 {
 	glGenBuffers(1, &ID);

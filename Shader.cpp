@@ -1,4 +1,8 @@
 #include "Shader.h"
+#include <glm/gtc/type_ptr.hpp>
+
+//Class Responsibility :
+//Compiles shaders and hold utility functions for activating, deleting, and setting uniforms.
 
 std::string get_file_contents(const char* filename)
 {
@@ -56,6 +60,34 @@ void Shader::Activate() {
 
 void Shader::Delete() {
 	glDeleteProgram(ID);
+}
+
+void Shader::SetVec(const char* uniformName, const glm::vec2& value) {
+	GLint location = glGetUniformLocation(ID, uniformName);
+	glUniform2fv(location, 1, glm::value_ptr(value));
+}
+void Shader::SetVec(const char* uniformName, const glm::vec3& value) {
+	GLint location = glGetUniformLocation(ID, uniformName);
+	glUniform3fv(location, 1, glm::value_ptr(value));
+}
+void Shader::SetVec(const char* uniformName, const glm::vec4& value) {
+	GLint location = glGetUniformLocation(ID, uniformName);
+	glUniform4fv(location, 1, glm::value_ptr(value));
+}
+void Shader::SetInt(const char* uniformName, int value)
+{
+	GLint location = glGetUniformLocation(ID, uniformName);
+	glUniform1i(location, value);
+}
+void Shader::SetFloat(const char* uniformName, float value)
+{
+	GLint location = glGetUniformLocation(ID, uniformName);
+	glUniform1f(location, value);
+}
+void Shader::SetMatrix4(const char* uniformName, glm::mat4 matrix)
+{
+	GLint location = glGetUniformLocation(ID, uniformName);
+	glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
 void Shader::compileErrors(unsigned int shader, const char* type) {

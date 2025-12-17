@@ -8,8 +8,14 @@
 #include<glm/gtc/type_ptr.hpp>
 #include<glm/gtx/rotate_vector.hpp>
 #include<glm/gtx/vector_angle.hpp>
+#include <json/json.h>
 
 #include"Shader.h"
+
+struct CameraData {
+	glm::vec3 position;
+	glm::vec3 orientation;
+};
 
 class Camera {
 public:
@@ -24,6 +30,8 @@ public:
 	glm::vec3 lastOrientation;
 	glm::vec3 startPosition;
 	glm::vec3 startOrientation;
+
+	glm::mat4 projectionMatrix;
 
 	int	width;
 	int height;
@@ -46,11 +54,12 @@ public:
 	glm::mat4 GetViewMatrix() const;
 	glm::mat4 GetProjectionMatrix() const;
 
+	void SaveCameraState();
+
+	static CameraData LoadCameraState();
 private:
 	glm::mat4 viewMatrix;
-	glm::mat4 projectionMatrix;
 
-	void LogCameraIfChanged();
 	bool PositionChanged();
 	bool OrientationChanged();
 	void ClearLog();

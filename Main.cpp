@@ -1,23 +1,44 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/epsilon.hpp>
+
+#include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 #include "Model.h"
 #include "Main.h"
+#include "Scene.h"
 
-const unsigned int width = 1024;
-const unsigned int height = 1024;
+const unsigned int mWidth = 1024;
+const unsigned int mHeight = 1024;
 
-float deltaTime;
-float lastFrame;
+float mNearPlane = 0.1f;
+float mFarPlane = 100.0f;
+
+float mDeltaTime;
+float mLastFrameTime;
 
 std::shared_ptr<Model> mStatueModel;
 std::shared_ptr<Model> mGroundModel;
 std::shared_ptr<Model> mLightModel;
 std::shared_ptr<Model> mCrowModel;
 
-std::vector<Object> objects;
-static char selectedObjectName[64] = "";
+std::shared_ptr<Shader> mMainShader;
+std::shared_ptr<Shader> mLightShader;
+std::shared_ptr<Shader> mShadowMapShader;
+std::shared_ptr<Shader> mColoredLightsShader;
+
+std::shared_ptr<Camera> mCamera;
+std::shared_ptr<Scene> mScene;
+
+std::vector<std::shared_ptr<Model>> mModels;
+
+//---------- ImGUI static variables
+static char selectedObjectName[64] = "\0";
+static float selectedObjectPosition[3] = { 0.0f, 0.0f, 0.0f };
+static float selectedObjectRotation[3] = { 0.0f, 0.0f, 0.0f };
+static float selectedObjectScale[3] = { 1.0f, 1.0f, 1.0f };
 
 int main() {
 	// Initialize GLFW
@@ -29,60 +50,71 @@ int main() {
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	// Create window
-	GLFWwindow* window = glfwCreateWindow(width, height, "OpenGL study Main", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(mWidth, mHeight, "OpenGL study Main", NULL, NULL);
 	if (window == NULL) {
 		std::cerr << "Failed to create GLFW window" << std::endl;
 		glfwTerminate();
 		return -1;
 	}
 	glfwMakeContextCurrent(window);
-	
+
 	// Load OpenGL functions using GLAD
 	if (!gladLoadGL()) {
 		std::cerr << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
 
-	// Setup Dear ImGui context
+	//Setup ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+	ImGuiIO& ImGuiInput = ImGui::GetIO();
+	ImGuiInput.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;// Enable Keyboard Controls
 
 	// Setup Platform/Renderer backends
-	ImGui_ImplGlfw_InitForOpenGL(window, true);          // Second param install_callback=true will install GLFW callbacks and chain to existing ones.
+	ImGui_ImplGlfw_InitForOpenGL(window, true);// Second param install_callback=true will install GLFW callbacks and chain to existing ones.
 	ImGui_ImplOpenGL3_Init();
 
 	// Set viewport from bottom-left (0,0) to top-right (width, height)
-	glViewport(0, 0, width, height);
+	glViewport(0, 0, mWidth, mHeight);
 
-	// Load shaders
-	Shader mainShader("default.vert", "default.frag");
-	Shader lightShader("light.vert", "light.frag");
-	Shader shadowMapShader("shadowMap.vert", "shadowMap.frag");
+	// Load shaders - Stored as shared pointers to facilitate access across functions
+	mMainShader = std::make_shared<Shader>("default.vert", "default.frag");
+	mShadowMapShader = std::make_shared<Shader>("shadowMap.vert", "shadowMap.frag");
+	mLightShader = std::make_shared<Shader>("light.vert", "light.frag");
+	mColoredLightsShader = std::make_shared<Shader>("colorLight.vert", "colorLight.frag");
 
-	// Enable depth testing, face culling, and stencil buffer
+	// Enable depth testing
 	glEnable(GL_DEPTH_TEST);
+	//Face culling
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
 
-	CameraData camData = Main::LoadCameraState();
 	// Initialize camera
-	Camera camera(width, height, camData.position, camData.orientation);
+	CameraData camData = Camera::LoadCameraState();
+	mCamera = std::make_shared<Camera>(mWidth, mHeight, camData.position, camData.orientation);
 	
 	// Load models
-	mStatueModel = std::make_shared<Model>(Main::GenerateModel("Models/statue/scene.gltf", true));
-	mGroundModel = std::make_shared<Model>(Main::GenerateModel("Models/ground/scene.gltf", true));
-	mLightModel = std::make_shared<Model>(Main::GenerateModel("Models/sphere/scene.gltf", true));
-	mCrowModel = std::make_shared<Model>(Main::GenerateModel("Models/crow/scene.gltf", true));
+	mStatueModel = std::make_shared<Model>("Models/statue/scene.gltf", true, "Statue");
+	mGroundModel = std::make_shared<Model>("Models/ground/scene.gltf", true, "Ground");
+	mLightModel = std::make_shared<Model>("Models/sphere/scene.gltf", true, "Light");
+	mCrowModel = std::make_shared<Model>("Models/crow/scene.gltf", true, "Crow");
+
+	mModels.push_back(mStatueModel);
+	mModels.push_back(mGroundModel);
+	mModels.push_back(mLightModel);
+	mModels.push_back(mCrowModel);
+
+	//Adding objects to the collection (unordered map) of Object data, used as source of truth for objects transformation.
+	mScene = std::make_shared<Scene>();
+	mScene->AddObjectsToScene(mModels);
+
 	//Depth framebuffer
 	unsigned int depthMapFBO;
 	glGenFramebuffers(1, &depthMapFBO);
 
 	//Depth buffer texture for framebuffer
-	const unsigned int SHADOW_WIDTH = 2048 * 4, SHADOW_HEIGHT = 2048 * 4;
+	const unsigned int SHADOW_WIDTH = mWidth * 4, SHADOW_HEIGHT = mHeight * 4;
 	unsigned int depthMap;
 	glGenTextures(1, &depthMap);
 	glBindTexture(GL_TEXTURE_2D, depthMap);
@@ -99,17 +131,37 @@ int main() {
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 	
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
-	glDrawBuffer(GL_NONE);
+	glDrawBuffer(GL_NONE); //Not using colors since we're using only for depth component
 	glReadBuffer(GL_NONE);
-	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	//Associate the uniform to the texture slots
-	mainShader.Activate();
-	glUniform1i(glGetUniformLocation(mainShader.ID, "diffuse0"), 0);
-	glUniform1i(glGetUniformLocation(mainShader.ID, "shadowMap"), 1);
+	mMainShader->Activate();
+	mMainShader->SetInt("diffuse0", 0);
+	mMainShader->SetInt("shadowMap", 1);
 
-	glm::vec3 lightPos(0.0f, 5.0f, 5.0f);
+	//Models initial transform values
+	glm::vec3 lightStartPosition(0.0f, 5.0f, 5.0f);
+
+	glm::vec3 statuePos(-1.5f, 0.9f, 0.0f);
+	glm::vec3 statueRot(0.0f, 52.5f, 0.0f);
+	glm::vec3 statueSca(2.0f, 2.0f, 2.0f);
+	
+	glm::vec3 crowPos(1.9f, 0.7f, 0.0f);
+	glm::vec3 crowRot(0.0f, -45.0f, 0.0f);
+	glm::vec3 crowSca(0.04f, 0.04f, 0.04f);
+
+	glm::vec3 groundPos(0.0f, 0.3f, 0.0f);
+	glm::vec3 groundSca(0.1f, 0.01f, 0.1f);
+
+	//Updating the matrices at the object map with the initial setup.
+	mScene->SetObjectMatrix(mLightModel, lightStartPosition, glm::vec3(0.0f), glm::vec3(0.2f));
+	mScene->SetObjectMatrix(mStatueModel, statuePos, statueRot, statueSca);
+	mScene->SetObjectMatrix(mCrowModel, crowPos, crowRot, crowSca);
+	mScene->SetObjectMatrix(mGroundModel, groundPos, glm::vec3(0.0f), groundSca);
+
+	//Calculate object bounds after changing their matrices (used for object picking)
+	mScene->UpdateAllObjectsBounds();
 
 	// Main render loop
 	while (!glfwWindowShouldClose(window)) {
@@ -121,116 +173,37 @@ int main() {
 		ImGui::NewFrame();
 
 		DrawObjectEditor();
+		
+		float currentTime = glfwGetTime();
+		mDeltaTime = currentTime - mLastFrameTime;
+		mLastFrameTime = currentTime;
 
-		float currentFrame = glfwGetTime();
-		deltaTime = currentFrame - lastFrame;
-		lastFrame = currentFrame;
-
-		if (!(io.WantCaptureMouse || io.WantCaptureKeyboard)) {
-			camera.Inputs(window, deltaTime);
+		if (!(ImGuiInput.WantCaptureMouse || ImGuiInput.WantCaptureKeyboard)) {
+			mCamera->Inputs(window, mDeltaTime);
 		}
 		
-
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		// 1. render depth of scene to texture (from light's perspective)
-		// --------------------------------------------------------------
-		glm::mat4 lightProjection, lightView;
-		glm::mat4 lightSpaceMatrix;
 
-		float near_plane = 0.1f, far_plane = 50.0f;
+		glm::vec3 currentLightPos = mScene->GetObjectPosition(mLightModel);
+		glm::mat4 lightSpaceMatrix = Main::GenerateLightSpaceMatrix(currentLightPos, mNearPlane, mFarPlane);
+
+		ShadowMapRenderPass(lightSpaceMatrix, SHADOW_WIDTH, SHADOW_HEIGHT, depthMapFBO);
+
+		mCamera->updateMatrix(45.f, mNearPlane, mFarPlane);
 		
-		lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-		lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		lightSpaceMatrix = lightProjection * lightView;
-
-		shadowMapShader.Activate();
-		glUniformMatrix4fv(glGetUniformLocation(shadowMapShader.ID, "lightSpaceMatrix"),1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
-	
-		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-		glClear(GL_DEPTH_BUFFER_BIT);
-
-		Main::DrawSceneWithShader(shadowMapShader, camera, false);
-
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		glViewport(0, 0, width, height);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		// 2. render scene as normal using the generated depth/shadow map  
-		// --------------------------------------------------------------
-		mainShader.Activate();
-		camera.updateMatrix(45.f, near_plane, far_plane);
-		glUniformMatrix4fv(glGetUniformLocation(mainShader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(camera.GetProjectionMatrix()));
-		glUniformMatrix4fv(glGetUniformLocation(mainShader.ID, "view"), 1, GL_FALSE, glm::value_ptr(camera.GetViewMatrix()));
-
-		glUniform3f(glGetUniformLocation(mainShader.ID, "viewPos"), camera.Position.x, camera.Position.y, camera.Position.z);
-		glUniform3f(glGetUniformLocation(mainShader.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
-		glUniformMatrix4fv(glGetUniformLocation(mainShader.ID, "lightSpaceMatrix"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
+		mMainShader->Activate();
+		Main::SetupMainShaderUniforms(mMainShader, currentLightPos, lightSpaceMatrix);
 
 		//Bind the texture to the shadowMap uniform at the appropriate texture slot, associated before the loop
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, depthMap);
 
-		Main::DrawSceneWithShader(mainShader, camera, true);
-		Main::DrawLight(lightShader, camera, glm::vec4(1.0f), lightPos, true);
+		Main::DrawSceneWithShader(mMainShader, *mCamera, false);
+		Main::DrawLight(mLightShader, *mCamera, glm::vec4(1.0f), mScene->GetObjectPosition(mLightModel), false);
 
-
-		bool wasMousePressedLastFrame = false;
-
-		bool isMousePressedNow = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
-		if (isMousePressedNow && !wasMousePressedLastFrame) {
-			double mouseX, mouseY;
-			glfwGetCursorPos(window, &mouseX, &mouseY);
-
-			if (!io.WantCaptureMouse) {
-				glm::vec3 rayStart = glm::unProject(
-					glm::vec3(mouseX, height - mouseY, 0.0f),
-					camera.GetViewMatrix(),
-					camera.GetProjectionMatrix(),
-					glm::vec4(0, 0, width, height)
-				);
-
-				glm::vec3 rayEnd = glm::unProject(
-					glm::vec3(mouseX, height - mouseY, 1.0f),
-					camera.GetViewMatrix(),
-					camera.GetProjectionMatrix(),
-					glm::vec4(0, 0, width, height)
-				);
-
-				if (glm::any(glm::isnan(rayStart)) || glm::any(glm::isnan(rayEnd))) {
-					// Handle error - unProject failed
-					return 0;
-				}
-
-				glm::vec3 rayDir = glm::normalize(rayEnd - rayStart);
-
-				float closestHit = std::numeric_limits<float>::max();
-				Object* selected = nullptr;
-
-				for (auto& obj : objects) {
-					float tHit;
-					if (Main::RayIntersectsAABB(rayStart, rayDir, obj, tHit)) {
-						if (tHit > 0.0f && tHit < closestHit) {
-							closestHit = tHit;
-							selected = &obj;
-						}
-					}
-				}
-
-				if (selected) {
-					strncpy_s(selectedObjectName, selected->name.c_str(), sizeof(selectedObjectName));
-					selectedObjectName[sizeof(selectedObjectName) - 1] = '\0';
-				}
-				else {
-					strncpy_s(selectedObjectName, "", sizeof(selectedObjectName));
-				}
-			}
-		}
-
-		wasMousePressedLastFrame = isMousePressedNow;
-
-
-
+		HandleObjectSelection(window, ImGuiInput, *mCamera); //Sets mSelectedObject
+	
+		UpdateUI();//Updates data at ImGui window according to selection
 
 		//ImGui Render
 		ImGui::Render();
@@ -239,10 +212,12 @@ int main() {
 		// Swap buffers and poll events
 		glfwSwapBuffers(window);
 	}
-	Main::SaveCameraState(camera);
+	mCamera->SaveCameraState();
+
 	// Cleanup
-	mainShader.Delete();
-	shadowMapShader.Delete();
+	mMainShader->Delete();
+	mLightShader->Delete();
+	mShadowMapShader->Delete();
 
 	//Shutdown
 	ImGui_ImplOpenGL3_Shutdown();
@@ -253,133 +228,307 @@ int main() {
 	return 0;
 }
 
+void Main::SetupMainShaderUniforms(std::shared_ptr<Shader>& shader, glm::vec3& currentLightPos, glm::mat4& lightSpaceMatrix)
+{
+	shader->SetMatrix4("projection", mCamera->GetProjectionMatrix());
+	shader->SetMatrix4("view", mCamera->GetViewMatrix());
+
+	shader->SetVec("viewPos", mCamera->Position);
+	shader->SetVec("lightPos", glm::vec3(currentLightPos.x, currentLightPos.y, currentLightPos.z));
+
+	shader->SetMatrix4("lightSpaceMatrix", lightSpaceMatrix);
+}
+
+void ShadowMapRenderPass(glm::mat4& lightSpaceMatrix, const unsigned int SHADOW_WIDTH, const unsigned int SHADOW_HEIGHT, unsigned int depthMapFBO)
+{
+	mShadowMapShader->Activate();
+	mShadowMapShader->SetMatrix4("lightSpaceMatrix", lightSpaceMatrix);
+
+	glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	Main::DrawSceneWithShader(mShadowMapShader, *mCamera, false);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glViewport(0, 0, mWidth, mHeight);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+glm::mat4 Main::GenerateLightSpaceMatrix(glm::vec3 currentLightPosition, float nearPlane, float farPlane) {
+	glm::mat4 lightProjection;
+	glm::mat4 lightView;
+	glm::mat4 lightSpaceMatrix;
+
+	glm::vec3 lightPos = mScene->GetObjectPosition(mLightModel);//To sync light model position with actual light matrix
+
+	lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, nearPlane, farPlane);
+	lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	lightSpaceMatrix = lightProjection * lightView;
+
+	return lightSpaceMatrix;
+}
+
+void HandleObjectSelection(GLFWwindow* window, ImGuiIO& io, const Camera& camera)
+{
+	static bool wasMousePressedLastFrame = false;
+
+	bool isMousePressedNow = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+	if (isMousePressedNow && !wasMousePressedLastFrame) {
+		if (!io.WantCaptureMouse) {
+			mScene->mSelectedObject = Main::GetSelectedObject(camera, window);
+		}
+	}
+
+	wasMousePressedLastFrame = isMousePressedNow;
+}
+
+void UpdateUI() {
+	Object* selectedObject = mScene->mSelectedObject;
+
+	if (selectedObject) {
+		strncpy_s(selectedObjectName, selectedObject->name.c_str(), sizeof(selectedObjectName));
+		selectedObjectName[sizeof(selectedObjectName) - 1] = '\0';
+		selectedObjectPosition[0] = selectedObject->position.x;
+		selectedObjectPosition[1] = selectedObject->position.y;
+		selectedObjectPosition[2] = selectedObject->position.z;
+
+		selectedObjectRotation[0] = selectedObject->rotation.x;
+		selectedObjectRotation[1] = selectedObject->rotation.y;
+		selectedObjectRotation[2] = selectedObject->rotation.z;
+
+		selectedObjectScale[0] = selectedObject->scale.x;
+		selectedObjectScale[1] = selectedObject->scale.y;
+		selectedObjectScale[2] = selectedObject->scale.z;
+	}
+	else {
+		strncpy_s(selectedObjectName, "", sizeof(selectedObjectName));
+		selectedObjectPosition[0] = 0.f;
+		selectedObjectPosition[1] = 0.f;
+		selectedObjectPosition[2] = 0.f;
+
+		selectedObjectRotation[0] = 0.f;
+		selectedObjectRotation[1] = 0.f;
+		selectedObjectRotation[2] = 0.f;
+
+		selectedObjectScale[0] = 1.0f;
+		selectedObjectScale[1] = 1.0f;
+		selectedObjectScale[2] = 1.0f;
+	}
+}
+
+void UpdateSelectedObjectPosition() {
+	Object* selectedObject = mScene->mSelectedObject;
+
+	if (!selectedObject) {
+		return;
+	}
+
+	glm::vec3 position(
+		selectedObjectPosition[0],
+		selectedObjectPosition[1],
+		selectedObjectPosition[2]
+	);
+
+	glm::vec3 rotation(
+		selectedObjectRotation[0],
+		selectedObjectRotation[1],
+		selectedObjectRotation[2]
+	);
+
+	glm::vec3 scale(
+		selectedObjectScale[0],
+		selectedObjectScale[1],
+		selectedObjectScale[2]
+	);
+
+	glm::mat4 newMatrix = glm::translate(glm::mat4(1.0f), position);
+	newMatrix = glm::rotate(newMatrix, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+	newMatrix = glm::rotate(newMatrix, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+	newMatrix = glm::rotate(newMatrix, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+	newMatrix = glm::scale(newMatrix, scale);
+
+	selectedObject->position = position;
+	selectedObject->rotation = rotation;
+	selectedObject->scale = scale;
+	selectedObject->matrix = newMatrix;
+
+	selectedObject->CalculateObjectBounds();
+}
+
+Object* Main::GetSelectedObject(const Camera& camera, GLFWwindow* window) {
+	double mouseX, mouseY;
+	glfwGetCursorPos(window, &mouseX, &mouseY);
+
+	glm::mat4 view = camera.GetViewMatrix();
+	glm::mat4 proj = camera.GetProjectionMatrix();
+
+	glm::vec3 rayEnd = glm::unProject(
+		glm::vec3(mouseX, mHeight - mouseY, 1.0f),
+		view,
+		proj,
+		glm::vec4(0, 0, mWidth, mHeight)
+	);
+
+	glm::vec3 rayOrigin = camera.Position;
+	glm::vec3 rayDir = glm::normalize(rayEnd - rayOrigin);
+
+	Object* selected = nullptr;
+	float closestHit = std::numeric_limits<float>::max();
+
+	for (auto& [name, obj] : mScene->mObjects) {
+		float tHit;
+		if (Main::RayIntersectsAABB(rayOrigin, rayDir, obj, tHit)) {
+			if (tHit > 0.0f && tHit < closestHit) {
+				closestHit = tHit;
+				selected = &obj;
+			}
+		}
+	}
+
+	return selected;
+}
+
+void Main::DrawSceneWithShader(std::shared_ptr<Shader>& shader, Camera camera, bool debugBounds) {
+
+	for (size_t i = 0; i < mModels.size(); i++)
+	{
+		if (mModels[i]->name == mLightModel->name) //Don't draw light with regular shaders (maybe make this in a appropriate manner later)
+		{
+			continue;
+		}
+		glm::mat4 matrix = mScene->GetObjectMatrix(mModels[i]);
+
+		mModels[i]->Draw(*shader, camera, matrix);
+
+		if (debugBounds || mScene->mSelectedObject && mModels[i]->name == mScene->mSelectedObject->name)
+		{
+			DebugModelCenterScreenSpace(camera, matrix, IM_COL32(255, 255, 255, 255));
+			DebugModelBoundsScreenSpace(camera, matrix, mModels[i]->localInitialBoundsMin, mModels[i]->localInitialBoundsMax);
+		}
+	}
+}
+
+void Main::DrawLight(std::shared_ptr<Shader> shader, Camera camera, glm::vec4 color, glm::vec3 position, bool debugBounds) {
+	shader->Activate();
+	shader->SetVec("lightColor", glm::vec4(color.x, color.y, color.z, color.w));
+
+	glm::vec3 lightScaleFactors(0.07f);
+	glm::mat4 lightMatrix = glm::translate(glm::mat4(1.0f), position);
+	lightMatrix = glm::scale(lightMatrix, lightScaleFactors);
+
+	mLightModel->Draw(*shader, camera, lightMatrix);
+
+	if (debugBounds || mScene->mSelectedObject && mLightModel->name == mScene->mSelectedObject->name)
+	{
+		DebugModelCenterScreenSpace(camera, lightMatrix, IM_COL32(255, 0, 0, 255));
+		DebugModelBoundsScreenSpace(camera, lightMatrix, mLightModel->localInitialBoundsMin, mLightModel->localInitialBoundsMax);
+	}
+}
+
+bool Main::RayIntersectsAABB(const glm::vec3& rayOrigin, const glm::vec3& rayDir, const Object& obj, float& tHit)
+{
+	float tMin = -std::numeric_limits<float>::infinity();
+	float tMax = std::numeric_limits<float>::infinity();
+
+	for (int axis = 0; axis < 3; ++axis)
+	{
+		if (std::abs(rayDir[axis]) < FLT_EPSILON)
+		{
+			if (rayOrigin[axis] < obj.minBounds[axis] ||
+				rayOrigin[axis] > obj.maxBounds[axis])
+			{
+				return false;
+			}
+		}
+		else
+		{
+			float invDir = 1.0f / rayDir[axis];
+
+			float tNear = (obj.minBounds[axis] - rayOrigin[axis]) * invDir;
+			float tFar = (obj.maxBounds[axis] - rayOrigin[axis]) * invDir;
+
+			if (tNear > tFar) std::swap(tNear, tFar);
+
+			tMin = std::max(tMin, tNear);
+			tMax = std::min(tMax, tFar);
+
+			if (tMin > tMax) return false;
+		}
+	}
+
+	tHit = tMin;
+	return true;
+}
+
 void DrawObjectEditor()
 {
 	ImGui::Begin("Object Editor");
 
-	ImGui::Text("Name");
-	ImGui::Separator();
-	ImGui::InputText("##", selectedObjectName, IM_ARRAYSIZE(selectedObjectName));
+	if (mScene->mSelectedObject) {
 
-	ImGui::Text("Transform");
-	ImGui::Separator();
+		ImGui::Text("Name    ");
+		ImGui::SameLine();
+		ImGui::InputText("##name", selectedObjectName, IM_ARRAYSIZE(selectedObjectName));
 
-	static float position[3] = { 0.0f, 0.0f, 0.0f };
-	static float rotation[3] = { 0.0f, 0.0f, 0.0f };
-	static float scale[3] = { 1.0f, 1.0f, 1.0f };
+		DrawText("Transform", 0.5f, 0.3f);
 
-	ImGui::DragFloat3("Position", position, 0.1f);
-	ImGui::DragFloat3("Rotation", rotation, 0.1f);
-	ImGui::DragFloat3("Scale", scale, 0.1f);
+		ImGui::Text("Position");
+		ImGui::SameLine();
+		ImGui::DragFloat3("##pos", selectedObjectPosition, 0.1f);
+
+		ImGui::Text("Rotation");
+		ImGui::SameLine();
+		ImGui::DragFloat3("##rot", selectedObjectRotation, 0.1f);
+
+		ImGui::Text("Scale   ");
+		ImGui::SameLine();
+		ImGui::DragFloat3("##sca", selectedObjectScale, 0.01f, 0.01f, 10.0f);
+
+		UpdateSelectedObjectPosition();
+
+		mScene->mSelectedObject->CalculateObjectBounds();
+	}
+	else {
+		ImGui::Text("No object selected");
+	}
 
 	ImGui::End();
 }
 
-Model Main::GenerateModel(std::string path, bool flipUVY)
+void DrawText(const char* text, float xOffset, float yOffset)
 {
-	Model model(path.c_str(), flipUVY);
-	return model;
+	ImVec2 windowSize = ImGui::GetWindowSize();
+	ImVec2 textSize = ImGui::CalcTextSize(text);
+	float textPosX = (windowSize.x - textSize.x) * xOffset;
+	float textPosY = (windowSize.y - textSize.y) * yOffset;
+	ImGui::SetCursorPos(ImVec2(textPosX, textPosY));
+
+	ImGui::Text(text);
 }
 
-void Main::DrawSceneWithShader(Shader shader, Camera camera, bool debugBounds) {
-	glm::vec3 statuePos = glm::vec3(0.f, -0.2f, 0.0f);
-	glm::mat4 statueMatrix = glm::translate(glm::mat4(1.0f), statuePos);
-	mStatueModel->Draw(shader, camera, statueMatrix);
-
-	if (debugBounds)
-	{
-		DebugModelCenterScreenSpace(camera, statueMatrix, width, height, IM_COL32(255, 255, 0, 255));
-		DebugModelBoundsScreenSpace(camera, statueMatrix, mStatueModel->boundsMin, mStatueModel->boundsMax);
-	}
-
-	glm::vec3 groundPos = glm::vec3(0.f, -0.7f, 0.0f);
-	glm::vec3 groundScaleFactor(0.5f, 0.1f, 0.5f);
-	glm::mat4 groundMatrix = glm::translate(glm::mat4(1.0f), groundPos);
-	groundMatrix = glm::scale(groundMatrix, groundScaleFactor);
-	mGroundModel->Draw(shader, camera, groundMatrix);
-
-	
-	glm::vec3 crowPos = glm::vec3(2.f, -0.045f, 0.f);
-	glm::vec3 crowScaleFactor(0.05f, 0.05f, 0.05f);
-	glm::mat4 crowMatrix = glm::translate(glm::mat4(1.0f), crowPos);
-	crowMatrix = glm::rotate(crowMatrix, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	crowMatrix = glm::scale(crowMatrix, crowScaleFactor);
-	mCrowModel->Draw(shader, camera, crowMatrix);
-
-	if (debugBounds)
-	{
-		DebugModelCenterScreenSpace(camera, crowMatrix, width, height, IM_COL32(0, 0, 255, 255));
-		DebugModelBoundsScreenSpace(camera, crowMatrix, mCrowModel->boundsMin, mCrowModel->boundsMax);
-	}
-
-	AddObjectToPickablesCollection(mStatueModel, statueMatrix, "Statue");
-	AddObjectToPickablesCollection(mCrowModel, crowMatrix, "Crow");
-}
-
-void Main::AddObjectToPickablesCollection(const std::shared_ptr<Model>& model, const glm::mat4& modelMatrix, const std::string& name) {
-	auto exists = std::find_if(objects.begin(), objects.end(),
-		[&](const Object& obj) { return obj.name == name; });
-
-	if (exists == objects.end()) {
-		objects.push_back(MakeObjectFromModelMatrix(model, modelMatrix, name));
-	}
-}
-
-Object Main::MakeObjectFromModelMatrix(const std::shared_ptr<Model>& model,const glm::mat4& modelMatrix,const std::string& name) {
-
-	glm::vec3 minLocal = model->boundsMin;
-	glm::vec3 maxLocal = model->boundsMax;
-
-	std::vector<glm::vec3> localCorners = {
-		{minLocal.x, minLocal.y, minLocal.z},
-		{maxLocal.x, minLocal.y, minLocal.z},
-		{minLocal.x, maxLocal.y, minLocal.z},
-		{maxLocal.x, maxLocal.y, minLocal.z},
-		{minLocal.x, minLocal.y, maxLocal.z},
-		{maxLocal.x, minLocal.y, maxLocal.z},
-		{minLocal.x, maxLocal.y, maxLocal.z},
-		{maxLocal.x, maxLocal.y, maxLocal.z}
-	};
-
-	glm::vec3 minBounds(FLT_MAX);
-	glm::vec3 maxBounds(-FLT_MAX);
-
-	for (auto& c : localCorners) {
-		glm::vec4 worldPos = modelMatrix * glm::vec4(c, 1.0f);
-		minBounds = glm::min(minBounds, glm::vec3(worldPos));
-		maxBounds = glm::max(maxBounds, glm::vec3(worldPos));
-	}
-
-	Object obj;
-	obj.name = name;
-	obj.minBounds = minBounds;
-	obj.maxBounds = maxBounds;
-	obj.matrix = modelMatrix;
-	return obj;
-}
-
-void Main::DebugModelCenterScreenSpace(Camera camera, glm::mat4 modelMatrix, int width, int height, ImU32 color) {
+void Main::DebugModelCenterScreenSpace(Camera camera, glm::mat4 modelMatrix, ImU32 color) {
 	// Extract the world position from the modelMatrix (translation part)
 	glm::vec3 worldPos = glm::vec3(modelMatrix[3]);
 
 	// Project to clip space
-	glm::vec4 clip = camera.GetProjectionMatrix() * camera.GetViewMatrix() * glm::vec4(worldPos, 1.0f);
-	if (clip.w <= 0) return; // behind camera
+	glm::vec4 clipSpacePos = camera.GetProjectionMatrix() * camera.GetViewMatrix() * glm::vec4(worldPos, 1.0f);
+	if (clipSpacePos.w <= 0) return; // behind camera. The w component of the homogeneous clipspace coordinates represents the
+	// depth scaling factor, or the perspective divisor.
 
 	// Normalize to NDC
-	glm::vec3 ndc = glm::vec3(clip) / clip.w;
+	glm::vec3 normalizedDeviceCoordinates = glm::vec3(clipSpacePos) / clipSpacePos.w;
 
 	// Convert to screen space
-	ImVec2 screen(
-		(ndc.x * 0.5f + 0.5f) * width,
-		(1.0f - (ndc.y * 0.5f + 0.5f)) * height
-	);
+	float screenSpaceWidth = (normalizedDeviceCoordinates.x * 0.5f + 0.5f) * mWidth;
+	float screenSpaceHeight = (1.0f - (normalizedDeviceCoordinates.y * 0.5f + 0.5f)) * mHeight;
+	ImVec2 screen(screenSpaceWidth, screenSpaceHeight);
 
 	// Draw circle overlay
 	ImDrawList* draw_list = ImGui::GetForegroundDrawList();
 	draw_list->AddCircle(screen, 6.0f, color, 16, 2.0f);
 }
-
 
 void Main::DebugModelBoundsScreenSpace(Camera camera, glm::mat4 modelMatrix, const glm::vec3& boundsMin, const glm::vec3& boundsMax) {
 	// Build 8 corners from the model-level bounds
@@ -394,26 +543,22 @@ void Main::DebugModelBoundsScreenSpace(Camera camera, glm::mat4 modelMatrix, con
 		{boundsMax.x, boundsMax.y, boundsMax.z}
 	};
 
-	float minX = width, minY = height;
+	float minX = mWidth, minY = mHeight;
 	float maxX = 0, maxY = 0;
 
 	glm::mat4 viewProj = camera.GetProjectionMatrix() * camera.GetViewMatrix();
 
 	for (auto& corner : localCorners) {
-		// Transform to world space
 		glm::vec4 worldPos = modelMatrix * glm::vec4(corner, 1.0f);
 
-		// Project to clip space
 		glm::vec4 clip = viewProj * worldPos;
-		if (clip.w <= 0) continue; // behind camera
+		if (clip.w <= 0) continue;
 
-		// Normalize to NDC
-		glm::vec3 ndc = glm::vec3(clip) / clip.w;
+		glm::vec3 normalizedDeviceCoordinates = glm::vec3(clip) / clip.w;
 
-		// Convert to screen space
 		ImVec2 screen(
-			(ndc.x * 0.5f + 0.5f) * width,
-			(1.0f - (ndc.y * 0.5f + 0.5f)) * height
+			(normalizedDeviceCoordinates.x * 0.5f + 0.5f) * mWidth,
+			(1.0f - (normalizedDeviceCoordinates.y * 0.5f + 0.5f)) * mHeight
 		);
 
 		minX = std::min(minX, screen.x);
@@ -426,96 +571,3 @@ void Main::DebugModelBoundsScreenSpace(Camera camera, glm::mat4 modelMatrix, con
 	ImDrawList* draw_list = ImGui::GetForegroundDrawList();
 	draw_list->AddRect(ImVec2(minX, minY), ImVec2(maxX, maxY), IM_COL32(255, 0, 0, 255));
 }
-
-
-void Main::DrawLight(Shader shader, Camera camera, glm::vec4 color, glm::vec3 position, bool debugBounds) {
-	shader.Activate();
-	glUniform4f(glGetUniformLocation(shader.ID, "lightColor"), color.x, color.y, color.z, color.w);
-
-	glm::vec3 lightScaleFactors(0.07f);
-	glm::mat4 lightMatrix = glm::translate(glm::mat4(1.0f), position);
-	lightMatrix = glm::scale(lightMatrix, lightScaleFactors);
-
-	mLightModel->Draw(shader, camera, lightMatrix);
-
-	if (debugBounds)
-	{
-		DebugModelCenterScreenSpace(camera, lightMatrix, width, height, IM_COL32(255, 0, 0, 255));
-		DebugModelBoundsScreenSpace(camera, lightMatrix, mLightModel->boundsMin, mLightModel->boundsMax);
-	}
-
-	AddObjectToPickablesCollection(mLightModel, lightMatrix, "Light");
-}
-
-void Main::SaveCameraState(Camera& cam) {
-	std::cout << "Saving Camera State" << std::endl;
-	cam.LogState();
-
-	nlohmann::json cameraStateData;
-	cameraStateData["position"] = { cam.Position.x, cam.Position.y, cam.Position.z };
-	cameraStateData["orientation"] = { cam.Orientation.x, cam.Orientation.y, cam.Orientation.z };
-
-	std::ofstream file("camera_state.json");
-	if (file.is_open()) {
-		file << cameraStateData.dump(4);
-		file.close();
-	}
-}
-
-CameraData Main::LoadCameraState() {
-	CameraData cam;
-	std::ifstream file("camera_state.json");
-	if (file.is_open()) {
-		nlohmann::json j;
-		file >> j;
-
-		auto pos = j["position"];
-		auto ori = j["orientation"];
-
-		cam.position = glm::vec3(pos[0], pos[1], pos[2]);
-		cam.orientation = glm::vec3(ori[0], ori[1], ori[2]);
-
-		file.close();
-	}
-	else {
-		cam.position = glm::vec3(-5.0f, 10.0f, 0.0f);
-		cam.orientation = glm::vec3(0.66125, -0.710963, 0.239399);
-	}
-
-	return cam;
-}
-
-bool Main::RayIntersectsAABB(const glm::vec3& rayOrigin,
-	const glm::vec3& rayDir,
-	const Object& obj,
-	float& tHit)
-{
-	// obj.minBounds e obj.maxBounds devem estar em world space
-	float tMin = -std::numeric_limits<float>::infinity();
-	float tMax = std::numeric_limits<float>::infinity();
-
-	for (int i = 0; i < 3; i++) {
-		if (fabs(rayDir[i]) < 1e-8f) {
-			// Raio paralelo ao eixo
-			if (rayOrigin[i] < obj.minBounds[i] || rayOrigin[i] > obj.maxBounds[i])
-				return false; // fora do intervalo
-		}
-		else {
-			float ood = 1.0f / rayDir[i];
-			float t1 = (obj.minBounds[i] - rayOrigin[i]) * ood;
-			float t2 = (obj.maxBounds[i] - rayOrigin[i]) * ood;
-
-			if (t1 > t2) std::swap(t1, t2);
-
-			tMin = std::max(tMin, t1);
-			tMax = std::min(tMax, t2);
-
-			if (tMin > tMax) return false; // sem interseção
-		}
-	}
-
-	tHit = tMin;
-	return true;
-}
-
-

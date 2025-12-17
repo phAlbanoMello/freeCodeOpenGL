@@ -87,6 +87,12 @@
     <ClCompile Include="Backend\imgui_impl_glfw.cpp">
       <Filter>Backend</Filter>
     </ClCompile>
+    <ClCompile Include="Object.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="default.vert">
@@ -185,6 +191,12 @@
     <None Include="framebuffer.frag">
       <Filter>Resource Files\Shaders</Filter>
     </None>
+    <None Include="colorLight.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="colorLight.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h">
@@ -240,6 +252,12 @@
     </ClInclude>
     <ClInclude Include="Backend\imgui_impl_glfw.h">
       <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="Object.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
