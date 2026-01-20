@@ -8,8 +8,8 @@ class Main {
 public:
 	//Rendering
 	static void DrawSceneWithShader(std::shared_ptr<Shader>& shader, Camera camera, bool debugBounds);
-	static glm::mat4 GenerateLightSpaceMatrix(glm::vec3 currentLightPosition, float nearPlane, float farPlane);
-	static void SetupMainShaderUniforms(std::shared_ptr<Shader>& shader, glm::vec3& currentLightPos, glm::mat4& lightSpaceMatrix);
+	static std::vector<glm::mat4>  GenerateLightSpaceMatrices(glm::vec3 currentLightPosition, float nearPlane, float farPlane);
+	static void SetupMainShaderUniforms(std::shared_ptr<Shader>& shader, glm::vec3& currentLightPos);
 	static void DrawLight(std::shared_ptr<Shader> shader, Camera camera, glm::vec4 color, glm::vec3 position, bool debugBounds);
 	
 	//Picking
@@ -29,4 +29,4 @@ void UpdateUI();
 void UpdateSelectedObjectPosition();
 
 //Shadow Renderer
-void ShadowMapRenderPass(glm::mat4& lightSpaceMatrix, const unsigned int SHADOW_WIDTH, const unsigned int SHADOW_HEIGHT, unsigned int depthMapFBO);
+void ShadowMapRenderPass(std::vector<glm::mat4>& lightSpaceMatrices, const unsigned int SHADOW_WIDTH, const unsigned int SHADOW_HEIGHT, unsigned int depthMapFBO);

@@ -200,6 +200,7 @@
     <None Include="outlining.frag" />
     <None Include="outlining.vert" />
     <None Include="shadowMap.frag" />
+    <None Include="shadowMap.geom" />
     <None Include="shadowMap.vert" />
   </ItemGroup>
   <ItemGroup>

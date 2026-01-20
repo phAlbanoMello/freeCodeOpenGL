@@ -15,6 +15,8 @@ const unsigned int mHeight = 1024;
 
 float mNearPlane = 0.1f;
 float mFarPlane = 100.0f;
+float mPointLightNearPlane = 0.1f;
+float mPointLightFarPlane = 25.0;
 
 float mDeltaTime;
 float mLastFrameTime;
@@ -39,6 +41,10 @@ static char selectedObjectName[64] = "\0";
 static float selectedObjectPosition[3] = { 0.0f, 0.0f, 0.0f };
 static float selectedObjectRotation[3] = { 0.0f, 0.0f, 0.0f };
 static float selectedObjectScale[3] = { 1.0f, 1.0f, 1.0f };
+
+static float lightLinearTerm = 1.0f;
+static float lightQuadraticTerm = 0.22f;
+static float ambientLight = 0.12f;
 
 int main() {
 	// Initialize GLFW
@@ -79,7 +85,7 @@ int main() {
 
 	// Load shaders - Stored as shared pointers to facilitate access across functions
 	mMainShader = std::make_shared<Shader>("default.vert", "default.frag");
-	mShadowMapShader = std::make_shared<Shader>("shadowMap.vert", "shadowMap.frag");
+	mShadowMapShader = std::make_shared<Shader>("shadowMap.vert", "shadowMap.frag", "shadowMap.geom");
 	mLightShader = std::make_shared<Shader>("light.vert", "light.frag");
 	mColoredLightsShader = std::make_shared<Shader>("colorLight.vert", "colorLight.frag");
 
@@ -115,33 +121,35 @@ int main() {
 
 	//Depth buffer texture for framebuffer
 	const unsigned int SHADOW_WIDTH = mWidth * 4, SHADOW_HEIGHT = mHeight * 4;
-	unsigned int depthMap;
-	glGenTextures(1, &depthMap);
-	glBindTexture(GL_TEXTURE_2D, depthMap);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
-		SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	float borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
-	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+	unsigned int depthCubemap;
+	glGenTextures(1, &depthCubemap);
 
-	//Attach as framebuffer's depth buffer
+	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+	for (unsigned int i = 0; i < 6; i++)
+	{
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	}
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-	
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
-	glDrawBuffer(GL_NONE); //Not using colors since we're using only for depth component
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap, 0);
+	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	//Associate the uniform to the texture slots
 	mMainShader->Activate();
 	mMainShader->SetInt("diffuse0", 0);
-	mMainShader->SetInt("shadowMap", 1);
+	mMainShader->SetInt("depthMap", 1);
 
 	//Models initial transform values
-	glm::vec3 lightStartPosition(0.0f, 5.0f, 5.0f);
+	glm::vec3 lightStartPosition(0.3f, 1.7f, 1.3f);
 
 	glm::vec3 statuePos(-1.5f, 0.9f, 0.0f);
 	glm::vec3 statueRot(0.0f, 52.5f, 0.0f);
@@ -185,18 +193,18 @@ int main() {
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
 		glm::vec3 currentLightPos = mScene->GetObjectPosition(mLightModel);
-		glm::mat4 lightSpaceMatrix = Main::GenerateLightSpaceMatrix(currentLightPos, mNearPlane, mFarPlane);
+		std::vector<glm::mat4> lightSpaceMatrices = Main::GenerateLightSpaceMatrices(currentLightPos, mPointLightNearPlane, mPointLightFarPlane);
 
-		ShadowMapRenderPass(lightSpaceMatrix, SHADOW_WIDTH, SHADOW_HEIGHT, depthMapFBO);
+		ShadowMapRenderPass(lightSpaceMatrices, SHADOW_WIDTH, SHADOW_HEIGHT, depthMapFBO);
 
 		mCamera->updateMatrix(45.f, mNearPlane, mFarPlane);
 		
-		mMainShader->Activate();
-		Main::SetupMainShaderUniforms(mMainShader, currentLightPos, lightSpaceMatrix);
-
 		//Bind the texture to the shadowMap uniform at the appropriate texture slot, associated before the loop
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, depthMap);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+		
+		mMainShader->Activate();
+		Main::SetupMainShaderUniforms(mMainShader, currentLightPos);
 
 		Main::DrawSceneWithShader(mMainShader, *mCamera, false);
 		Main::DrawLight(mLightShader, *mCamera, glm::vec4(1.0f), mScene->GetObjectPosition(mLightModel), false);
@@ -228,21 +236,32 @@ int main() {
 	return 0;
 }
 
-void Main::SetupMainShaderUniforms(std::shared_ptr<Shader>& shader, glm::vec3& currentLightPos, glm::mat4& lightSpaceMatrix)
+void Main::SetupMainShaderUniforms(std::shared_ptr<Shader>& shader, glm::vec3& currentLightPos)
 {
+	shader->SetFloat("far_plane", mPointLightFarPlane);
 	shader->SetMatrix4("projection", mCamera->GetProjectionMatrix());
 	shader->SetMatrix4("view", mCamera->GetViewMatrix());
 
 	shader->SetVec("viewPos", mCamera->Position);
 	shader->SetVec("lightPos", glm::vec3(currentLightPos.x, currentLightPos.y, currentLightPos.z));
-
-	shader->SetMatrix4("lightSpaceMatrix", lightSpaceMatrix);
+	shader->SetVec("lightColor", glm::vec4(1.0f));
+	shader->SetFloat("linear", lightLinearTerm);
+	shader->SetFloat("quadratic", lightQuadraticTerm);
+	shader->SetFloat("ambient", ambientLight);
 }
 
-void ShadowMapRenderPass(glm::mat4& lightSpaceMatrix, const unsigned int SHADOW_WIDTH, const unsigned int SHADOW_HEIGHT, unsigned int depthMapFBO)
+void ShadowMapRenderPass(std::vector<glm::mat4>& lightSpaceMatrices, const unsigned int SHADOW_WIDTH, const unsigned int SHADOW_HEIGHT, unsigned int depthMapFBO)
 {
 	mShadowMapShader->Activate();
-	mShadowMapShader->SetMatrix4("lightSpaceMatrix", lightSpaceMatrix);
+
+	for (unsigned int i = 0; i < 6; ++i)
+	{
+		std::string name = "shadowMatrices[" + std::to_string(i) + "]";
+		mShadowMapShader->SetMatrix4(name.c_str(), lightSpaceMatrices[i]);
+	}
+
+	mShadowMapShader->SetFloat("far_plane", mPointLightFarPlane);
+	mShadowMapShader->SetVec("lightPos", mScene->GetObjectPosition(mLightModel));
 
 	glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
@@ -256,18 +275,23 @@ void ShadowMapRenderPass(glm::mat4& lightSpaceMatrix, const unsigned int SHADOW_
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-glm::mat4 Main::GenerateLightSpaceMatrix(glm::vec3 currentLightPosition, float nearPlane, float farPlane) {
-	glm::mat4 lightProjection;
-	glm::mat4 lightView;
-	glm::mat4 lightSpaceMatrix;
+std::vector<glm::mat4> Main::GenerateLightSpaceMatrices(glm::vec3 currentLightPosition, float nearPlane, float farPlane) {
+	
+	//float aspect = (float)mWidth / (float)mHeight;
+	
+	glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), 1.0f, nearPlane, farPlane);
 
-	glm::vec3 lightPos = mScene->GetObjectPosition(mLightModel);//To sync light model position with actual light matrix
-
-	lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, nearPlane, farPlane);
-	lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	lightSpaceMatrix = lightProjection * lightView;
-
-	return lightSpaceMatrix;
+	std::vector<glm::mat4> shadowTransforms;
+	glm::vec3 lightPos = mScene->GetObjectPosition(mLightModel);
+	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(1., 0., 0.), glm::vec3(0., -1., 0.)));  //Pos X
+	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(-1., 0., 0.), glm::vec3(0., -1., 0.))); //Neg X
+	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0., 1., 0.), glm::vec3(0., 0., 1.)));   //Pos Y
+	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0., -1., 0.), glm::vec3(0., 0., -1.))); //Neg Y
+	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0., 0., 1.), glm::vec3(0., -1., 0.))); //Pos Z
+	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0., 0., -1.), glm::vec3(0., -1., 0.))); //Neg Z
+	
+	
+	return shadowTransforms;
 }
 
 void HandleObjectSelection(GLFWwindow* window, ImGuiIO& io, const Camera& camera)
@@ -413,7 +437,7 @@ void Main::DrawSceneWithShader(std::shared_ptr<Shader>& shader, Camera camera, b
 void Main::DrawLight(std::shared_ptr<Shader> shader, Camera camera, glm::vec4 color, glm::vec3 position, bool debugBounds) {
 	shader->Activate();
 	shader->SetVec("lightColor", glm::vec4(color.x, color.y, color.z, color.w));
-
+	
 	glm::vec3 lightScaleFactors(0.07f);
 	glm::mat4 lightMatrix = glm::translate(glm::mat4(1.0f), position);
 	lightMatrix = glm::scale(lightMatrix, lightScaleFactors);
@@ -485,6 +509,19 @@ void DrawObjectEditor()
 		ImGui::Text("Scale   ");
 		ImGui::SameLine();
 		ImGui::DragFloat3("##sca", selectedObjectScale, 0.01f, 0.01f, 10.0f);
+
+		if (mScene->mSelectedObject->name == "Light")
+		{
+			ImGui::Text("Point Light Uniforms");
+			ImGui::Text("Linear");
+			ImGui::SameLine();
+			ImGui::DragFloat("##linear", &lightLinearTerm, 0.1f);
+			ImGui::Text("Quadratic");
+			ImGui::SameLine();
+			ImGui::DragFloat("##quadratic", &lightQuadraticTerm, 0.1f);
+			ImGui::Text("Ambient");
+			ImGui::DragFloat("##ambient", &ambientLight, 0.1f);
+		}
 
 		UpdateSelectedObjectPosition();
 
