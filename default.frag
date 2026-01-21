@@ -33,6 +33,15 @@ uniform float quadratic;
 // Ambient light intensity
 uniform float ambient;
 
+vec3 sampleOffsetDirections[20] = vec3[]
+(
+   vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1), 
+   vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
+   vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
+   vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
+   vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
+);   
+
 float cubeMapShadow(vec3 fragPos){
 	vec3 fragToLight = fragPos - lightPos;
 	float currentDepth = length(fragToLight);
@@ -47,32 +56,27 @@ float cubeMapShadow(vec3 fragPos){
 	return shadow;
 }
 
-float pcfShadows(vec4 fragPosLightSpace){
-	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w; 
-	projCoords = projCoords * 0.5 + 0.5;
+float pcfShadows(vec3 fragPos){
+	vec3 fragToLight = fragPos - lightPos;
+    float currentDepth = length(fragToLight);
 
-	if (projCoords.z > 1.0)return 0.0;
-
-    float bias = max(0.003 * (1.0 - dot(normalize(Normal), normalize(lightPos - crntPos))), 0.001);
+    float bias = max(0.15 * (1.0 - dot(normalize(Normal), normalize(lightPos - fragPos))), 0.001);
 
     float shadow = 0.0;
+    int samples = 20;
+    float viewDistance = length(camPos - fragPos);
+    float diskRadius = (1.0 + (viewDistance / far_plane)) / 40.0;
 
-	//convert pixel offsets into normalized texture coordinate offsets, so we can sample neighboring texels correctly
-    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
-
-    for(int x = -1; x <= 1; ++x)
+    for(int i = 0; i < samples; ++i)
     {
-        for(int y = -1; y <= 1; ++y)
-        {
-			//sampling neighboor texels by adding offsets that alternate between -1 and 1, and multiplying by texel normalized coordinate offset
-            float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
-            shadow += projCoords.z - bias > pcfDepth ? 1.0 : 0.0;
-        }
+        float closestDepth = texture(depthMap, fragToLight + sampleOffsetDirections[i] * diskRadius).r;
+        closestDepth *= far_plane;
+        if(currentDepth - bias > closestDepth)
+            shadow += 1.0;
     }
 
-    shadow /= 9.0;
-
-	return shadow;
+    shadow /= float(samples);
+    return shadow;
 }
 
 float basicShadow(vec4 fragPosLightSpace)

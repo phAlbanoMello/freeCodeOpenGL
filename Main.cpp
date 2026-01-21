@@ -151,9 +151,9 @@ int main() {
 	//Models initial transform values
 	glm::vec3 lightStartPosition(0.3f, 1.7f, 1.3f);
 
-	glm::vec3 statuePos(-1.5f, 0.9f, 0.0f);
+	glm::vec3 statuePos(-1.5f, 0.7f, 0.0f);
 	glm::vec3 statueRot(0.0f, 52.5f, 0.0f);
-	glm::vec3 statueSca(2.0f, 2.0f, 2.0f);
+	glm::vec3 statueSca(1.0f, 1.0f, 1.0f);
 	
 	glm::vec3 crowPos(1.9f, 0.7f, 0.0f);
 	glm::vec3 crowRot(0.0f, -45.0f, 0.0f);
