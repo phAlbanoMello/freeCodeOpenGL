@@ -130,8 +130,8 @@ int main() {
 		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 	}
 
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -149,9 +149,11 @@ int main() {
 	mMainShader->SetInt("depthMap", 1);
 
 	//Models initial transform values
-	glm::vec3 lightStartPosition(0.3f, 1.7f, 1.3f);
+	glm::vec3 lightStartPosition(1.6, 3.7f, 1.3f);
+	glm::vec3 lightStartRotation(-0.9f, -1.f, 0.f);
+	
+	glm::vec3 statuePos(-0.5f, 0.8f, 1.0f);
 
-	glm::vec3 statuePos(-1.5f, 0.9f, 0.0f);
 	glm::vec3 statueRot(0.0f, 52.5f, 0.0f);
 	glm::vec3 statueSca(2.0f, 2.0f, 2.0f);
 	
@@ -163,7 +165,7 @@ int main() {
 	glm::vec3 groundSca(0.1f, 0.01f, 0.1f);
 
 	//Updating the matrices at the object map with the initial setup.
-	mScene->SetObjectMatrix(mLightModel, lightStartPosition, glm::vec3(0.0f), glm::vec3(0.2f));
+	mScene->SetObjectMatrix(mLightModel, lightStartPosition, lightStartRotation, glm::vec3(0.2f));
 	mScene->SetObjectMatrix(mStatueModel, statuePos, statueRot, statueSca);
 	mScene->SetObjectMatrix(mCrowModel, crowPos, crowRot, crowSca);
 	mScene->SetObjectMatrix(mGroundModel, groundPos, glm::vec3(0.0f), groundSca);
@@ -244,6 +246,11 @@ void Main::SetupMainShaderUniforms(std::shared_ptr<Shader>& shader, glm::vec3& c
 
 	shader->SetVec("viewPos", mCamera->Position);
 	shader->SetVec("lightPos", glm::vec3(currentLightPos.x, currentLightPos.y, currentLightPos.z));
+	
+	glm::vec3 lightForward = mScene->GetObjectMatrix(mLightModel)[2];
+	shader->SetVec("lightForward", lightForward);
+
+	shader->SetVec("lightForward", mScene->GetObjectRotation(mLightModel));
 	shader->SetVec("lightColor", glm::vec4(1.0f));
 	shader->SetFloat("linear", lightLinearTerm);
 	shader->SetFloat("quadratic", lightQuadraticTerm);

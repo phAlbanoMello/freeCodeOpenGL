@@ -22,6 +22,7 @@ uniform samplerCube depthMap;
 uniform vec4 lightColor;
 //Gets the position of the light from main
 uniform vec3 lightPos;
+uniform vec3 lightForward;
 //Gets the position of the Camera from main
 uniform vec3 camPos;
 //Used by the cubemap shadowmap
@@ -129,12 +130,12 @@ vec4 pointLight()
 
 vec4 spotLight()
 {
-    float outerCone = 0.8;  // Light fades out beyond this angle (cosine)
-    float innerCone = 0.95; // Full brightness within this angle (cosine)
+    float outerCone = cos(radians(17.5));  // Light fades out beyond this angle (cosine)
+    float innerCone = cos(radians(12.5)); // Full brightness within this angle (cosine)
 
 	vec3 normal = normalize(Normal);
 	vec3 lightDirection = normalize(lightPos - crntPos);
-	float diffuse = max(dot(normal, lightDirection), 0.f) * 0.9f;
+	float diffuseLight = max(dot(normal, lightDirection), 0.f) * 0.9f;
 	
 	float specularLight = 0.2f;
 	vec3 viewDirection = normalize(camPos - crntPos);
@@ -143,15 +144,26 @@ vec4 spotLight()
 	float specular = specAmount * specularLight;
 
     // Spotlight intensity based on angle
-    float angle = dot(vec3(0.0, -1.0, 0.0), -lightDirection);
+    float angle = dot(normalize(lightForward), -lightDirection);
     float intensity = clamp((angle - outerCone) / (innerCone - outerCone), 0.0, 1.0);
+	
+	float shadow = cubeMapShadow(crntPos);
 
-    vec4 diff = texture(diffuse0, texCoord);
+    vec4 diffuseColor = texture(diffuse0, texCoord);
     float specVal = texture(specular0, texCoord).r;
-    return (diff * (diffuse * intensity + ambient) + specVal * specular * intensity) * lightColor;
+
+	vec3 ambientComposition = diffuseColor.rgb * ambient;
+	vec3 diffuseComposition = diffuseColor.rgb * diffuseLight;
+	vec3 specularComposition = specVal * specular * lightColor.rgb;
+
+	vec3 lightComposition = diffuseComposition + specularComposition;
+
+	vec3 finalComposition = ambientComposition + lightComposition * intensity * (1-shadow);
+
+    return vec4(finalComposition, 1.);
 }
 
 void main()
 {
-	FragColor =  pointLight();
+	FragColor =  spotLight();
 }

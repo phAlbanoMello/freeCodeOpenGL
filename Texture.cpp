@@ -26,9 +26,9 @@ Texture::Texture(const char* image, const char* texType, GLuint slot)
 	unit = slot;
 	glBindTexture(GL_TEXTURE_2D, ID);
 
-	//Configures the type of algorithm used to make the image smaller or bigger (solving borders)
+	//Configures the type of algorithm used to make the image smaller or bigger when converting spaces
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	//Configures how the texture repeats if the shape is bigger then the texture dimensions
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
