@@ -106,10 +106,10 @@ int main() {
 	mLightModel = std::make_shared<Model>("Models/sphere/scene.gltf", true, "Light");
 	mCrowModel = std::make_shared<Model>("Models/crow/scene.gltf", true, "Crow");
 
-	mModels.push_back(mStatueModel);
+	//mModels.push_back(mStatueModel);
 	mModels.push_back(mGroundModel);
 	mModels.push_back(mLightModel);
-	mModels.push_back(mCrowModel);
+	//mModels.push_back(mCrowModel);
 
 	//Adding objects to the collection (unordered map) of Object data, used as source of truth for objects transformation.
 	mScene = std::make_shared<Scene>();
@@ -146,11 +146,12 @@ int main() {
 	//Associate the uniform to the texture slots
 	mMainShader->Activate();
 	mMainShader->SetInt("diffuse0", 0);
-	mMainShader->SetInt("depthMap", 1);
+	mMainShader->SetInt("normalMap", 1);
+	mMainShader->SetInt("depthMap", 2);
 
 	//Models initial transform values
-	glm::vec3 lightStartPosition(1.6, 3.7f, 1.3f);
-	glm::vec3 lightStartRotation(-0.9f, -1.f, 0.f);
+	glm::vec3 lightStartPosition(1.8f, 0.4f, 2.7f);
+	glm::vec3 lightStartRotation(94.f, 95.4f, -180.f);
 	
 	glm::vec3 statuePos(-0.5f, 0.8f, 1.0f);
 
@@ -161,14 +162,15 @@ int main() {
 	glm::vec3 crowRot(0.0f, -45.0f, 0.0f);
 	glm::vec3 crowSca(0.04f, 0.04f, 0.04f);
 
-	glm::vec3 groundPos(0.0f, 0.3f, 0.0f);
+	glm::vec3 groundPos(1.8f, 0.3f, 1.0f);
+	glm::vec3 groundRot(85.2, 0.0, 3.7);
 	glm::vec3 groundSca(0.1f, 0.01f, 0.1f);
 
 	//Updating the matrices at the object map with the initial setup.
 	mScene->SetObjectMatrix(mLightModel, lightStartPosition, lightStartRotation, glm::vec3(0.2f));
-	mScene->SetObjectMatrix(mStatueModel, statuePos, statueRot, statueSca);
-	mScene->SetObjectMatrix(mCrowModel, crowPos, crowRot, crowSca);
-	mScene->SetObjectMatrix(mGroundModel, groundPos, glm::vec3(0.0f), groundSca);
+	//mScene->SetObjectMatrix(mStatueModel, statuePos, statueRot, statueSca);
+	//mScene->SetObjectMatrix(mCrowModel, crowPos, crowRot, crowSca);
+	mScene->SetObjectMatrix(mGroundModel, groundPos, groundRot, groundSca);
 
 	//Calculate object bounds after changing their matrices (used for object picking)
 	mScene->UpdateAllObjectsBounds();
@@ -202,7 +204,7 @@ int main() {
 		mCamera->updateMatrix(45.f, mNearPlane, mFarPlane);
 		
 		//Bind the texture to the shadowMap uniform at the appropriate texture slot, associated before the loop
-		glActiveTexture(GL_TEXTURE1);
+		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
 		
 		mMainShader->Activate();
@@ -428,6 +430,16 @@ void Main::DrawSceneWithShader(std::shared_ptr<Shader>& shader, Camera camera, b
 		if (mModels[i]->name == mLightModel->name) //Don't draw light with regular shaders (maybe make this in a appropriate manner later)
 		{
 			continue;
+		}
+
+		if (mModels[i]->name == mGroundModel->name)
+		{
+			shader->SetFloat("textureTilling", 0.2f);
+			shader->SetInt("isGround", 1);
+		}
+		else {
+			shader->SetFloat("textureTilling", 1.0f);
+			shader->SetInt("isGround", 0);
 		}
 		glm::mat4 matrix = mScene->GetObjectMatrix(mModels[i]);
 

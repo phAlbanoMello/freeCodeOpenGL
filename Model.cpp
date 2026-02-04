@@ -270,6 +270,12 @@ std::vector<Texture> Model::getTextures()
 				loadedTex.push_back(specular);
 				loadedTexName.push_back(texPath);
 			}
+			else if (texPath.find("normal") != std::string::npos) {
+				Texture normal = Texture((fileDirectory + texPath).c_str(), "normal", loadedTex.size());
+				textures.push_back(normal);
+				loadedTex.push_back(normal);
+				loadedTexName.push_back(texPath);
+			}
 		}
 	}
 

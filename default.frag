@@ -16,6 +16,7 @@ in vec2 texCoord;
 uniform sampler2D diffuse0;
 uniform sampler2D specular0;
 uniform sampler2D shadowMap;
+uniform sampler2D normalMap;
 uniform samplerCube depthMap;
 
 // Lighting and camera uniforms
@@ -30,6 +31,8 @@ uniform float far_plane;
 
 uniform float linear;
 uniform float quadratic;
+uniform float textureTilling;
+uniform int isGround;
 
 // Ambient light intensity
 uniform float ambient;
@@ -130,17 +133,26 @@ vec4 pointLight()
 
 vec4 spotLight()
 {
-    float outerCone = cos(radians(17.5));  // Light fades out beyond this angle (cosine)
-    float innerCone = cos(radians(12.5)); // Full brightness within this angle (cosine)
+    float outerCone = cos(radians(25.0));  // Light fades out beyond this angle (cosine)
+    float innerCone = cos(radians(15.0)); // Full brightness within this angle (cosine)
 
-	vec3 normal = normalize(Normal);
+	vec2 finalTexCoords = texCoord;
+
+	if(isGround == 1){
+		finalTexCoords = texCoord * textureTilling;
+	}
+	
+	//vec3 normal = normalize(Normal);
+	vec3 normal = texture(normalMap, finalTexCoords).rgb;
+	normal = normalize(normal * 2.0 - 1.0);
+
 	vec3 lightDirection = normalize(lightPos - crntPos);
-	float diffuseLight = max(dot(normal, lightDirection), 0.f) * 0.9f;
+	float diffuseLight = max(dot(normal, lightDirection), 0.0);
 	
 	float specularLight = 0.2f;
 	vec3 viewDirection = normalize(camPos - crntPos);
 	vec3 reflectionDirection = reflect(-lightDirection, normal);
-	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.f), 32);
+	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.f), 32.);
 	float specular = specAmount * specularLight;
 
     // Spotlight intensity based on angle
@@ -149,8 +161,8 @@ vec4 spotLight()
 	
 	float shadow = cubeMapShadow(crntPos);
 
-    vec4 diffuseColor = texture(diffuse0, texCoord);
-    float specVal = texture(specular0, texCoord).r;
+    vec4 diffuseColor = texture(diffuse0, finalTexCoords);
+    float specVal = texture(specular0, finalTexCoords).r;
 
 	vec3 ambientComposition = diffuseColor.rgb * ambient;
 	vec3 diffuseComposition = diffuseColor.rgb * diffuseLight;
@@ -160,6 +172,7 @@ vec4 spotLight()
 
 	vec3 finalComposition = ambientComposition + lightComposition * intensity * (1-shadow);
 
+
     return vec4(finalComposition, 1.);
 }
 
@@ -167,3 +180,4 @@ void main()
 {
 	FragColor =  spotLight();
 }
+

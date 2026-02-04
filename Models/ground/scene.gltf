@@ -51,6 +51,10 @@
         {
             "sampler" : 0,
             "source" : 0
+        },
+	{
+            "sampler" : 0,
+            "source" : 1
         }
     ],
     "images" : [
@@ -58,6 +62,11 @@
             "mimeType" : "image/png",
             "name" : "diffuse",
             "uri" : "diffuse.png"
+        },
+	{
+            "mimeType" : "image/png",
+            "name" : "normal",
+            "uri" : "normal.png"
         }
     ],
     "accessors" : [
