@@ -33,6 +33,17 @@ glm::vec3 Scene::GetObjectRotation(std::shared_ptr<Model> model) {
 	return it->second.rotation;
 }
 
+glm::quat Scene::GetObjectOrientationQuat(std::shared_ptr<Model> model) {
+	auto it = mObjects.find(model->name);
+	if (it == mObjects.end())
+	{
+		std::cout << "Object not found in collection : " << model->name << std::endl;
+		return glm::quat();
+	}
+
+	return it->second.orientation;
+}
+
 glm::vec3 Scene::GetObjectScale(std::shared_ptr<Model> model) {
 	auto it = mObjects.find(model->name);
 	if (it == mObjects.end()) {
@@ -56,9 +67,9 @@ glm::mat4 Scene::GetObjectMatrix(std::shared_ptr<Model> model) {
 void Scene::SetObjectMatrix(std::shared_ptr<Model>& model, glm::vec3 position, glm::vec3 rotation, glm::vec3 scale) {
 	glm::mat4 matrix = translate(glm::mat4(1.0f), position);
 
-	matrix = glm::rotate(matrix, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
-	matrix = glm::rotate(matrix, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
-	matrix = glm::rotate(matrix, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+	glm::quat quaternion = glm::quat(glm::radians(rotation));
+
+	matrix *= glm::toMat4(quaternion); //Converting quaternion to rotation matrix
 
 	matrix = glm::scale(matrix, scale);
 
@@ -69,7 +80,7 @@ void Scene::SetObjectMatrix(std::shared_ptr<Model>& model, glm::vec3 position, g
 		obj.position = position;
 		obj.rotation = rotation;
 		obj.scale = scale;
-
+		obj.orientation = quaternion;
 		std::cout << "Set Object Matrix : " << obj.name << std::endl;
 	}
 }

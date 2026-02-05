@@ -151,7 +151,7 @@ int main() {
 
 	//Models initial transform values
 	glm::vec3 lightStartPosition(1.8f, 0.4f, 2.7f);
-	glm::vec3 lightStartRotation(94.f, 95.4f, -180.f);
+	glm::vec3 lightStartRotation(0.f, 0.0f, 0.0f);
 	
 	glm::vec3 statuePos(-0.5f, 0.8f, 1.0f);
 
@@ -249,10 +249,11 @@ void Main::SetupMainShaderUniforms(std::shared_ptr<Shader>& shader, glm::vec3& c
 	shader->SetVec("viewPos", mCamera->Position);
 	shader->SetVec("lightPos", glm::vec3(currentLightPos.x, currentLightPos.y, currentLightPos.z));
 	
-	glm::vec3 lightForward = mScene->GetObjectMatrix(mLightModel)[2];
-	shader->SetVec("lightForward", lightForward);
+	glm::quat orientation = mScene->GetObjectOrientationQuat(mLightModel);
+	glm::vec3 forward = orientation * glm::vec3(0.0f, 0.0f, -1.0f);
 
-	shader->SetVec("lightForward", mScene->GetObjectRotation(mLightModel));
+	shader->SetVec("lightForward", forward);
+	
 	shader->SetVec("lightColor", glm::vec4(1.0f));
 	shader->SetFloat("linear", lightLinearTerm);
 	shader->SetFloat("quadratic", lightQuadraticTerm);
@@ -377,15 +378,18 @@ void UpdateSelectedObjectPosition() {
 	);
 
 	glm::mat4 newMatrix = glm::translate(glm::mat4(1.0f), position);
-	newMatrix = glm::rotate(newMatrix, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
-	newMatrix = glm::rotate(newMatrix, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
-	newMatrix = glm::rotate(newMatrix, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+	
+	glm::quat quaternion = glm::quat(rotation);
+
+	newMatrix *= glm::toMat4(quaternion);
+
 	newMatrix = glm::scale(newMatrix, scale);
 
 	selectedObject->position = position;
 	selectedObject->rotation = rotation;
 	selectedObject->scale = scale;
 	selectedObject->matrix = newMatrix;
+	selectedObject->orientation = quaternion;
 
 	selectedObject->CalculateObjectBounds();
 }
