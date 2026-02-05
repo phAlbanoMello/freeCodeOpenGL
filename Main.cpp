@@ -45,6 +45,9 @@ static float selectedObjectScale[3] = { 1.0f, 1.0f, 1.0f };
 static float lightLinearTerm = 1.0f;
 static float lightQuadraticTerm = 0.22f;
 static float ambientLight = 0.12f;
+static float innerCutoff = 15.0;
+static float outerCutoff = 25.0;
+
 
 int main() {
 	// Initialize GLFW
@@ -150,8 +153,8 @@ int main() {
 	mMainShader->SetInt("depthMap", 2);
 
 	//Models initial transform values
-	glm::vec3 lightStartPosition(1.8f, 0.4f, 2.7f);
-	glm::vec3 lightStartRotation(0.f, 0.0f, 0.0f);
+	glm::vec3 lightStartPosition(-0.6f, -0.3f, 0.5f);
+	glm::vec3 lightStartRotation(-0.1f, -0.9f, 0.8f);
 	
 	glm::vec3 statuePos(-0.5f, 0.8f, 1.0f);
 
@@ -162,8 +165,8 @@ int main() {
 	glm::vec3 crowRot(0.0f, -45.0f, 0.0f);
 	glm::vec3 crowSca(0.04f, 0.04f, 0.04f);
 
-	glm::vec3 groundPos(1.8f, 0.3f, 1.0f);
-	glm::vec3 groundRot(85.2, 0.0, 3.7);
+	glm::vec3 groundPos(0.6f, 0.0f, 0.0f);
+	glm::vec3 groundRot(1.6, 0.0, 0.0);
 	glm::vec3 groundSca(0.1f, 0.01f, 0.1f);
 
 	//Updating the matrices at the object map with the initial setup.
@@ -253,7 +256,11 @@ void Main::SetupMainShaderUniforms(std::shared_ptr<Shader>& shader, glm::vec3& c
 	glm::vec3 forward = orientation * glm::vec3(0.0f, 0.0f, -1.0f);
 
 	shader->SetVec("lightForward", forward);
-	
+
+	//Light settings
+
+	shader->SetFloat("innerCutoff", innerCutoff);
+	shader->SetFloat("outerCutoff", outerCutoff);
 	shader->SetVec("lightColor", glm::vec4(1.0f));
 	shader->SetFloat("linear", lightLinearTerm);
 	shader->SetFloat("quadratic", lightQuadraticTerm);
@@ -352,7 +359,7 @@ void UpdateUI() {
 	}
 }
 
-void UpdateSelectedObjectPosition() {
+void UpdateSelectedObjectTransform() {
 	Object* selectedObject = mScene->mSelectedObject;
 
 	if (!selectedObject) {
@@ -438,11 +445,11 @@ void Main::DrawSceneWithShader(std::shared_ptr<Shader>& shader, Camera camera, b
 
 		if (mModels[i]->name == mGroundModel->name)
 		{
-			shader->SetFloat("textureTilling", 0.2f);
+			shader->SetFloat("textureTiling", 0.2f);
 			shader->SetInt("isGround", 1);
 		}
 		else {
-			shader->SetFloat("textureTilling", 1.0f);
+			shader->SetFloat("textureTiling", 1.0f);
 			shader->SetInt("isGround", 0);
 		}
 		glm::mat4 matrix = mScene->GetObjectMatrix(mModels[i]);
@@ -535,18 +542,18 @@ void DrawObjectEditor()
 
 		if (mScene->mSelectedObject->name == "Light")
 		{
-			ImGui::Text("Point Light Uniforms");
-			ImGui::Text("Linear");
+			ImGui::Text("Spot Light Uniforms");
+			ImGui::Text("Outer Cutoff");
 			ImGui::SameLine();
-			ImGui::DragFloat("##linear", &lightLinearTerm, 0.1f);
-			ImGui::Text("Quadratic");
+			ImGui::DragFloat("##outc", &outerCutoff, 0.1f);
+			ImGui::Text("Inner Cutoff");
 			ImGui::SameLine();
-			ImGui::DragFloat("##quadratic", &lightQuadraticTerm, 0.1f);
+			ImGui::DragFloat("##innerc", &innerCutoff, 0.1f);
 			ImGui::Text("Ambient");
 			ImGui::DragFloat("##ambient", &ambientLight, 0.1f);
 		}
 
-		UpdateSelectedObjectPosition();
+		UpdateSelectedObjectTransform();
 
 		mScene->mSelectedObject->CalculateObjectBounds();
 	}

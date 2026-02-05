@@ -67,7 +67,7 @@ glm::mat4 Scene::GetObjectMatrix(std::shared_ptr<Model> model) {
 void Scene::SetObjectMatrix(std::shared_ptr<Model>& model, glm::vec3 position, glm::vec3 rotation, glm::vec3 scale) {
 	glm::mat4 matrix = translate(glm::mat4(1.0f), position);
 
-	glm::quat quaternion = glm::quat(glm::radians(rotation));
+	glm::quat quaternion = glm::quat(rotation);
 
 	matrix *= glm::toMat4(quaternion); //Converting quaternion to rotation matrix
 

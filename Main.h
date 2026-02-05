@@ -26,7 +26,7 @@ void DrawObjectEditor();
 void DrawText(const char* text, float xOffset, float yOffset);
 void HandleObjectSelection(GLFWwindow* window, ImGuiIO& io, const Camera& camera);
 void UpdateUI();
-void UpdateSelectedObjectPosition();
+void UpdateSelectedObjectTransform();
 
 //Shadow Renderer
 void ShadowMapRenderPass(std::vector<glm::mat4>& lightSpaceMatrices, const unsigned int SHADOW_WIDTH, const unsigned int SHADOW_HEIGHT, unsigned int depthMapFBO);

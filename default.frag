@@ -31,7 +31,9 @@ uniform float far_plane;
 
 uniform float linear;
 uniform float quadratic;
-uniform float textureTilling;
+uniform float textureTiling;
+uniform float innerCutoff;
+uniform float outerCutoff;
 uniform int isGround;
 
 // Ambient light intensity
@@ -133,13 +135,13 @@ vec4 pointLight()
 
 vec4 spotLight()
 {
-    float outerCone = cos(radians(25.0));  // Light fades out beyond this angle (cosine)
-    float innerCone = cos(radians(15.0)); // Full brightness within this angle (cosine)
+    float outerCone = cos(radians(outerCutoff));  // Light fades out beyond this angle (cosine)
+    float innerCone = cos(radians(innerCutoff)); // Full brightness within this angle (cosine)
 
 	vec2 finalTexCoords = texCoord;
 
 	if(isGround == 1){
-		finalTexCoords = texCoord * textureTilling;
+		finalTexCoords = texCoord * textureTiling;
 	}
 	
 	//vec3 normal = normalize(Normal);

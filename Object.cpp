@@ -50,7 +50,7 @@ Object Object::MakeObjectFromModelMatrix(const std::shared_ptr<Model>& model, co
 	obj.matrix = modelMatrix;
 	obj.position = translation;
 	obj.rotation = glm::eulerAngles(rotation);
-	obj.orientation = glm::quat(obj.rotation);
+	obj.orientation = rotation;
 	obj.scale = scale;
 	obj.mModel = model;
 
