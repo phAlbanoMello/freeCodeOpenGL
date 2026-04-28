@@ -76,6 +76,22 @@ float pcfShadows(vec4 fragPosLightSpace){
         }
     }
 
+	//I could also calculate the kernel size but I have to check if this is okay or if it's unnescessary heavy
+	/*
+
+	float radius = 1; //1 = 3x3, 2 = 5x5, 3 = 7x7
+
+	for(int x = -radius; x <= radius; ++x)
+    {
+        for(int y = -radius; y <= radius; ++y)
+        {
+	............................................
+
+	float kernelSize = float(pow(2 * radius + 1, 2));
+    shadow /= kernelSize;
+
+	*/
+
     shadow /= 9.0;
 
 	return shadow;
