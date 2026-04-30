@@ -55,6 +55,33 @@ void Model::loadMesh(unsigned int indMesh)
 	std::vector<GLuint> indices = getIndices(JSON["accessors"][indAccInd]);
 	std::vector<Texture> textures = getTextures();
 
+	//Jump triangle to triangle (every 3 indices) and get their vertex to calculate the tangents
+	for (int i = 0; i < indices.size(); i +=3) 
+	{
+		Vertex& v0 = vertices[indices[i]];
+		Vertex& v1 = vertices[indices[i + 1]];
+		Vertex& v2 = vertices[indices[i + 2]];
+
+		glm::vec3 vertexDist1 = v1.position - v0.position;
+		glm::vec3 vertexDist2 = v2.position - v0.position;
+
+		float deltaU1 = v1.texUV.x - v0.texUV.x;
+		float deltaV1 = v1.texUV.y - v0.texUV.y;
+		float deltaU2 = v2.texUV.x - v0.texUV.x;
+		float deltaV2 = v2.texUV.y - v0.texUV.y;
+
+		float determinant = 1.0f / (deltaU1 * deltaV2 - deltaU2 * deltaV1);
+		glm::vec3 tangent = determinant * (deltaV2 * vertexDist1 - deltaV1 * vertexDist2);
+
+		v0.tangent += tangent;
+		v1.tangent += tangent;
+		v2.tangent += tangent;
+	}
+	for (Vertex& vertex : vertices)
+	{
+		vertex.tangent = glm::normalize(vertex.tangent);
+	}
+
 	glm::vec3 minBounds(FLT_MAX);
 	glm::vec3 maxBounds(-FLT_MAX);
 

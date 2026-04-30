@@ -6,11 +6,13 @@ out vec4 FragColor;
 // Inputs from the vertex shader
 in vec3 crntPos;
 //Imports the normal from the Vertex Shader
-in vec3 Normal;
+//in vec3 Normal;
 //Imports the color from the Vertex Shader
 in vec3 color;
 //Imports the texture coordinates from the Vertex Shader
 in vec2 texCoord;
+//Tangent, Bitanget and Normal matrix for proper normal mapping
+in mat3 TBN;
 
 // Texture samplers
 uniform sampler2D diffuse0;
@@ -46,7 +48,7 @@ float cubeMapShadow(vec3 fragPos){
 	float closestDepth = texture(depthMap, normalize(fragToLight)).r;
 	closestDepth *= far_plane;
 
-	float bias = max(0.05 * (1.0 - dot(normalize(Normal), normalize(lightPos - fragPos))), 0.001);
+	float bias = max(0.05 * (1.0 - dot(normalize(TBN[2]), normalize(lightPos - fragPos))), 0.001);
 
 	float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
 
@@ -59,7 +61,7 @@ float pcfShadows(vec4 fragPosLightSpace){
 
 	if (projCoords.z > 1.0)return 0.0;
 
-    float bias = max(0.003 * (1.0 - dot(normalize(Normal), normalize(lightPos - crntPos))), 0.001);
+    float bias = max(0.003 * (1.0 - dot(normalize(TBN[2]), normalize(lightPos - crntPos))), 0.001);
 
     float shadow = 0.0;
 
@@ -104,7 +106,7 @@ float basicShadow(vec4 fragPosLightSpace)
 
 	float closestDepth = texture(shadowMap, projCoords.xy).r;
 	float currentDepth = projCoords.z;
-	float bias = max(0.005 * (1.0 - dot(normalize(Normal), normalize(lightPos - crntPos))), 0.001);
+	float bias = max(0.005 * (1.0 - dot(normalize(TBN[2]), normalize(lightPos - crntPos))), 0.001);
 	float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
 
 	return shadow;
@@ -120,7 +122,7 @@ vec4 pointLight()
 	float b = 0.7f;
 	float intensity = 1.f / (linear * dist * dist + quadratic * dist + 1.f);
 
-	vec3 normal = normalize(Normal);
+	vec3 normal = normalize(TBN[2]);
 	vec3 lightDirection = normalize(lightVec);
 	float diffuseLight = max(dot(normal, lightDirection), 0.f) * 0.9f; //Trying to soften diffuse
 	float specular = 0.0f;
@@ -163,6 +165,7 @@ vec4 spotLight()
 	//vec3 normal = normalize(Normal);
 	vec3 normal = texture(normalMap, finalTexCoords).rgb;
 	normal = normalize(normal * 2.0 - 1.0);
+	normal = normalize(TBN * normal);
 
 	vec3 lightDirection = normalize(lightPos - crntPos);
 	float diffuseLight = max(dot(normal, lightDirection), 0.0);
