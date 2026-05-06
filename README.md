@@ -12,7 +12,7 @@ I organized the repository so that each branch isolates a single feature or tech
 
 ## How to Use This Repository
 
-I recommend finding the learning format that works best for you first, whether that is video tutorials, written guides, or a combination. [LearnOpenGL](https://learnopengl.com) is an excellent written reference and covers most of the topics in this repository. Use this repository if you are looking for a different perspective on a concept, or if you are running into implementation issues in an environment similar to mine (Windows, Visual Studio, GLTF model loading with a custom loader). The code here reflects real decisions made during study, including edge cases, comments, and occasional refactoring.
+I recommend finding the learning format that works best for you first, whether that is video tutorials, written guides, or a combination. I started from a Free Code Camp video with tutorials from Victor Gordon, and then changed to [LearnOpenGL](https://learnopengl.com) which is an excellent written reference and covers most of the topics in this repository. Use this repository if you are looking for a different perspective on a concept, or if you are running into implementation issues in an environment similar to mine (Windows, Visual Studio, GLTF model loading with a custom loader). The code here reflects real decisions made during study, including edge cases, comments, and occasional refactoring.
 
 ## Controls
 
