@@ -48,7 +48,7 @@ float cubeMapShadow(vec3 fragPos){
 	float closestDepth = texture(depthMap, normalize(fragToLight)).r;
 	closestDepth *= far_plane;
 
-	float bias = max(0.05 * (1.0 - dot(normalize(TBN[2]), normalize(lightPos - fragPos))), 0.001);
+	float bias = max(0.003 * (1.0 - dot(normalize(TBN[2]), normalize(lightPos - fragPos))), 0.001);
 
 	float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
 

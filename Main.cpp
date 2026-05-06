@@ -109,7 +109,7 @@ int main() {
 	mLightModel = std::make_shared<Model>("Models/sphere/scene.gltf", true, "Light");
 	mCrowModel = std::make_shared<Model>("Models/crow/scene.gltf", true, "Crow");
 
-	//mModels.push_back(mStatueModel);
+	mModels.push_back(mStatueModel);
 	mModels.push_back(mGroundModel);
 	mModels.push_back(mLightModel);
 	//mModels.push_back(mCrowModel);
@@ -153,25 +153,24 @@ int main() {
 	mMainShader->SetInt("depthMap", 2);
 
 	//Models initial transform values
-	glm::vec3 lightStartPosition(-0.6f, -0.3f, 0.5f);
-	glm::vec3 lightStartRotation(-0.1f, -0.9f, 0.8f);
+	glm::vec3 lightStartPosition(-1.6f, 1.6f, -0.2f);
+	glm::vec3 lightStartRotation(-1.7f, 0.5f, 0.8f);
 	
-	glm::vec3 statuePos(-0.5f, 0.8f, 1.0f);
-
-	glm::vec3 statueRot(0.0f, 52.5f, 0.0f);
-	glm::vec3 statueSca(2.0f, 2.0f, 2.0f);
+	glm::vec3 statuePos(0.0f, 0.1f, 0.0f);
+	glm::vec3 statueRot(0.0f, 0.0f, 0.0f);
+	glm::vec3 statueSca(1.0f, 1.0f, 1.0f);
 	
-	glm::vec3 crowPos(1.9f, 0.7f, 0.0f);
-	glm::vec3 crowRot(0.0f, -45.0f, 0.0f);
-	glm::vec3 crowSca(0.04f, 0.04f, 0.04f);
+	glm::vec3 crowPos(0.0f, 0.0f, 0.0f);
+	glm::vec3 crowRot(0.0f, 0.0f, 0.0f);
+	glm::vec3 crowSca(0.1f, 0.1f, 0.1f);
 
-	glm::vec3 groundPos(0.6f, 0.0f, 0.0f);
-	glm::vec3 groundRot(1.6, 0.0, 0.0);
-	glm::vec3 groundSca(0.1f, 0.01f, 0.1f);
+	glm::vec3 groundPos(0.6f, -0.3f, 0.0f);
+	glm::vec3 groundRot(0.0f, -0.2f, 0.0f);
+	glm::vec3 groundSca(0.1f, 0.08f, 0.1f);
 
 	//Updating the matrices at the object map with the initial setup.
 	mScene->SetObjectMatrix(mLightModel, lightStartPosition, lightStartRotation, glm::vec3(0.2f));
-	//mScene->SetObjectMatrix(mStatueModel, statuePos, statueRot, statueSca);
+	mScene->SetObjectMatrix(mStatueModel, statuePos, statueRot, statueSca);
 	//mScene->SetObjectMatrix(mCrowModel, crowPos, crowRot, crowSca);
 	mScene->SetObjectMatrix(mGroundModel, groundPos, groundRot, groundSca);
 
