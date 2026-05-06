@@ -109,7 +109,7 @@ int main() {
 	mLightModel = std::make_shared<Model>("Models/sphere/scene.gltf", true, "Light");
 	mCrowModel = std::make_shared<Model>("Models/crow/scene.gltf", true, "Crow");
 
-	mModels.push_back(mStatueModel);
+	//mModels.push_back(mStatueModel);
 	mModels.push_back(mGroundModel);
 	mModels.push_back(mLightModel);
 	//mModels.push_back(mCrowModel);
@@ -170,7 +170,7 @@ int main() {
 
 	//Updating the matrices at the object map with the initial setup.
 	mScene->SetObjectMatrix(mLightModel, lightStartPosition, lightStartRotation, glm::vec3(0.2f));
-	mScene->SetObjectMatrix(mStatueModel, statuePos, statueRot, statueSca);
+	//mScene->SetObjectMatrix(mStatueModel, statuePos, statueRot, statueSca);
 	//mScene->SetObjectMatrix(mCrowModel, crowPos, crowRot, crowSca);
 	mScene->SetObjectMatrix(mGroundModel, groundPos, groundRot, groundSca);
 
