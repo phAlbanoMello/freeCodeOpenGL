@@ -20,7 +20,7 @@ All scenes are navigable like a standard game engine viewport. Hold the right mo
 
 ## Branch Map
 
-| Branch | Description | ImGUI | Refined Camera with persistence |
+| Branch | Description | ImGUI | Refined Camera |
 |---|---|---|---|
 | `Face-Culling-FPS-Counter` | Introduction to face culling and an FPS counter in the window title | | |
 | `Stencil-Buffer-and-Outlining` | Uses the stencil buffer to render an outline effect around objects using a double-model technique | | |
